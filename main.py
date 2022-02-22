@@ -13,6 +13,7 @@ import time
 from typing import List
 
 from entity.userEntity import UserEntity
+from init import redisPoolObj
 from middleware.spiderMinddleware import SpiderMinddleware
 from request.download import Download
 from request.fetch import Session
@@ -96,6 +97,9 @@ class Main(SpiderMinddleware,Session):
 
 if __name__ == '__main__':
     while True:
-        Main().run()
+        m = Main()
+        m.run()
+        logger.info("关闭redis中...")
+        redisPoolObj.disconnect()
         logger.info("等待中...")
         time.sleep(60*30)

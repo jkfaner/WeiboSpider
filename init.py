@@ -38,12 +38,13 @@ logger.info("[mysql数据库连接池]:初始化成功->>> {} -> {}".format(
     mysql_config.host, mysql_config.database
 ))
 
-redisPool = RedisPool(
+redisPoolObj = RedisPool(
     host=redis_config.host,
     port=redis_config.port,
     password=redis_config.password,
     db=redis_config.db
-).redis
+)
+redisPool = redisPoolObj.redis
 logger.info("[redis数据库连接池]:初始化成功->>> {} -> {}".format(
     redis_config.host, redis_config.db
 ))

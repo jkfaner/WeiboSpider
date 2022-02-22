@@ -21,6 +21,9 @@ class RedisPool(object):
     def __del__(self):
         self.redis.connection_pool.disconnect()
 
+    def disconnect(self):
+        self.redis.connection_pool.disconnect()
+
 if __name__ == '__main__':
     r = RedisPool("222.222.222.1",6379,"redis123",15)
     name = "weibo_blogFinished"
