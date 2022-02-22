@@ -14,6 +14,7 @@
 class WeiboEntity(object):
 
     def __init__(self):
+        self.__is_top = None
         self.__created_at = None
         self.__images = None
         self.__livephoto_video = None
@@ -23,6 +24,14 @@ class WeiboEntity(object):
         self.__blog_id = None
         self.__image_str = None
         self.__video_str = None
+
+    @property
+    def is_top(self):
+        return self.__is_top
+
+    @is_top.setter
+    def is_top(self, is_top):
+        self.__is_top = is_top
 
     @property
     def id(self):

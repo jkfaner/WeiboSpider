@@ -153,8 +153,8 @@ class SpiderMinddleware(object):
         new_blogs = list()
         for blog in blogs:
             # 筛选爬取时间
-            if not match_date(create_time=blog.created_at, filter_date=spider_config.date):
-                # 不符合时间 抛出异常 捕获异常后需要中断爬取
+            if not blog.is_top and not match_date(create_time=blog.created_at, filter_date=spider_config.date):
+                # 不符合时间&不是置顶数据 抛出异常 捕获异常后需要中断爬取
                 create_time = time_formatting(blog.created_at, usefilename=False, strftime=True)
                 logger.warning(f"[{spider_config.date}]筛选的博客不在配置的下载时间之后:{create_time}")
                 raise DateError("筛选的博客不在配置的下载时间内", new_blogs)

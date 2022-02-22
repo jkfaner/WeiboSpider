@@ -143,6 +143,13 @@ class ExtractorWeibo(ExtractorUserInfo):
         :return:
         """
         weiboEntity = WeiboEntity()
+        # 检查是否是置顶 置顶数据在筛选过程中不中断
+        is_top = self.find_first_data(resp=item,target="isTop")
+        if is_top and isinstance(is_top,int) and is_top==1:
+            weiboEntity.is_top = True
+        else:
+            weiboEntity.is_top = False
+
         user_queue = self.extractor_userInfo(item)
         if len(user_queue) == 1:
             created_at = self.find_first_data(item, "created_at")
