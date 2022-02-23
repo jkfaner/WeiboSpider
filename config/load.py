@@ -33,7 +33,7 @@ def load_loginInfo() -> LoginEntity:
     login = LoginEntity()
     login.username = GLOBAL_CONFIG.get("login", "username")
     login.password = GLOBAL_CONFIG.get("login", "password")
-    login.mode = GLOBAL_CONFIG.get("login", "spider_follow_mode")
+    login.mode = GLOBAL_CONFIG.get("login", "mode")
     assert login.mode in ['pc', 'mobile', 'scanqr'], "你选择的登录方式有误，只能将mode设置为pc、mobile、scanqr，其中任意一个"
     return login
 

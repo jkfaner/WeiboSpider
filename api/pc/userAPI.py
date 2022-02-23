@@ -7,7 +7,7 @@
 @Time:2022/1/23 19:06
 @Project:WeiboSpider
 @File:userEnum.py
-@Desc:微博用户信息接口
+@Desc:微博用户信息PC端接口
 """
 from utils.tool import join_url
 

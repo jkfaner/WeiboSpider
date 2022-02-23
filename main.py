@@ -95,6 +95,25 @@ class FollowMain(InitMain):
                         yield blogs, user
                     time.sleep(2)
 
+    def listener(self):
+        """
+        监听是否有博主更新数据
+            1.监听是否有新关注的用户
+                1.1 有新关注->是否需要爬取->爬取
+            2.监听关注用户有无更新内容
+                2.1 有更新->是否需要爬取->爬取
+        1.通过访问关注者最新关注接口检测是否有更新的用户
+        2.通过访问关注者最新发布接口检测是否有更新的用户
+        注：优先爬取先关注的用户数据
+        :return:
+        """
+        # TODO 开发中
+        for item in self.requestIter.getUserFollowByNewPublicIter():
+            users = self.parse_user(item)
+            for blogs,user in self.get_blog(users=users):
+                self.start_download(blogs=blogs, user=user)
+
+
 
 class Main(FollowMain):
 
@@ -108,7 +127,7 @@ class Main(FollowMain):
             for users in self.get_follow(spider_follow_mode=spider_config.follow_mode):
                 for blogs, user in self.get_blog(users=users):
                     self.start_download(blogs=blogs, user=user)
-                    
+
         elif spider_config.mode == constants.SPIDER_MODE_REFRESH:
             # TODO 刷微博
             raise Exception("未定义：{}".format(spider_config.mode))
@@ -125,4 +144,4 @@ if __name__ == '__main__':
         logger.info("关闭mysql中...")
         mysqlPool.dispose()
         logger.info("等待中...")
-        time.sleep(60 * 30)
+        time.sleep(60 * 5)

@@ -7,7 +7,7 @@
 @Time:2022/2/18 16:39
 @Project:WeiboSpiderStation
 @File:blogAPI.py
-@Desc:微博博客接口
+@Desc:微博博客PC端接口
 """
 from utils.tool import join_url
 

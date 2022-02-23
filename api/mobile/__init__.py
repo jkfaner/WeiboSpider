@@ -4,13 +4,8 @@
 @Author:liamlee
 @Contact:geektalk@qq.com
 @Ide:PyCharm
-@Time:2022/2/17 20:37
-@Project:WeiboSpiderStation
+@Time:2022/2/23 21:02
+@Project:WeiboSpider
 @File:__init__.py.py
 @Desc:
 """
-from api.pc import WeiBoPC_API
-
-
-class WeiBoAPI(WeiBoPC_API):
-    pass

@@ -16,11 +16,11 @@ from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
 from entity.weiboTypeEntity import WeiboTypeEntity
 from extractor.weiboJsonExtractor import ExtractorWeibo
-from init import spider_config
+from init import spider_config, redisPool
 import utils.businessConstants as constants
 from utils.exception import ParameterError, DateError
 from utils.logger import logger
-from utils.tool import match_date, EntityToJson, time_formatting
+from utils.tool import match_date, EntityToJson, time_formatting, get_str_md5
 
 
 class SpiderMinddleware(object):
@@ -112,6 +112,24 @@ class SpiderMinddleware(object):
         logger.info(f"[{len(blogs)}]提取博客:{user.idstr}->{user.screen_name}")
         return blogs
 
+    def save_raw_blog_md5(self, response, user: UserEntity):
+        """
+        保存博客md5数据
+        注：存储的第一页数据 用于监听是否有数据更新
+        :param response:
+        :return:
+        """
+        # TODO 用户发布数据后首页since_id是否变化？会变化
+        #  首页since_id变化后 后面页码是否变化？
+        since_id = self.extractorWeibo.find_first_data(response, "since_id")
+        if since_id:
+            redis_key = "{}:{}".format(user.idstr,since_id,get_str_md5(json.dumps(response)))
+            if not redisPool.hexists(name=constants.REDIS_USER_BLOGS_NAME, key=redis_key):
+                redisPool.hset(name=constants.REDIS_USER_BLOGS_NAME, key=redis_key, value=json.dumps(response))
+                logger.info(f"[{user.idstr}]存储博客源数据：{redis_key}")
+            else:
+                logger.info(f"[{user.idstr}]存在博客源数据：{redis_key}")
+
     def filter_blogByFilter(self, blogs: List[WeiboTypeEntity], user: UserEntity) -> List[WeiboEntity]:
         """
         通过筛选条件筛选博客
@@ -162,7 +180,7 @@ class SpiderMinddleware(object):
                 new_blogs.append(blog)
 
         len_blogs = len(new_blogs)
-        for index, new_blog in enumerate(new_blogs,1):
+        for index, new_blog in enumerate(new_blogs, 1):
             user_msg = f"{user.idstr}->{user.screen_name}"
             blog_msg = f"{new_blog.blog_id}->{time_formatting(created_at=new_blog.created_at, usefilename=False, strftime=True)}"
             msg = f"[{index}/{len_blogs}]通过日期[{spider_config.date}]筛选博客:{user_msg} -->> {blog_msg}"
@@ -177,6 +195,7 @@ class SpiderMinddleware(object):
         :param user:
         :return:
         """
+        # self.save_raw_blog(response=response,user=user)
         blogs = self.extractor_blog(response=response, user=user)
         blogs = self.filter_blogByFilter(blogs=blogs, user=user)
         return self.filter_blogByDate(blogs=blogs, user=user)

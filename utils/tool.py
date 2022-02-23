@@ -99,8 +99,17 @@ def getRedisKey(blog_id, url, filepath):
     :param filepath:
     :return:
     """
+    str_data = f"{blog_id}&{url}&{filepath}"
+    return get_str_md5(str_data=str_data)
+
+def get_str_md5(str_data):
+    """
+    获取字符串md5值
+    :param str_data:
+    :return:
+    """
     md5 = hashlib.md5()
-    md5.update(f"{blog_id}&{url}&{filepath}".encode('utf-8'))
+    md5.update(str_data.encode('utf-8'))
     return md5.hexdigest()
 
 
