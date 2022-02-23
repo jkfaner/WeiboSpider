@@ -13,7 +13,7 @@ import time
 from typing import List
 
 from entity.userEntity import UserEntity
-from init import redisPoolObj
+from init import redisPoolObj, mysqlPool
 from middleware.spiderMinddleware import SpiderMinddleware
 from request.download import Download
 from request.fetch import Session
@@ -25,10 +25,6 @@ from utils.logger import logger
 
 
 class Main(SpiderMinddleware,Session):
-    mode_follow_weibo = "follow_weibo"
-    mode_follow_img = "follow_img"
-    mode_refresh = "refresh"
-    spider_mode_item = dict(follow_weibo="爬取关注", refresh="刷微博")
     requestIter = RequestIter()
     download = Download()
 
@@ -83,13 +79,10 @@ class Main(SpiderMinddleware,Session):
                     if blogs:
                         yield blogs,user
                     time.sleep(2)
-            # TODO DEBUG
-            #     break
-            # break
 
 
     def run(self):
-        for users in self.get_follow("最新发布"):
+        for users in self.get_follow("最新关注"):
             for blog,user in self.get_blog(users=users):
                 download_datas = self.download.filter_download(blogs=blog,user=user)
                 self.download.startDownload(download_datas)
@@ -101,5 +94,7 @@ if __name__ == '__main__':
         m.run()
         logger.info("关闭redis中...")
         redisPoolObj.disconnect()
+        logger.info("关闭mysql中...")
+        mysqlPool.dispose()
         logger.info("等待中...")
         time.sleep(60*30)
