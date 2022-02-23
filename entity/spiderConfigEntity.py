@@ -13,6 +13,7 @@
 class SpiderConfigEntity(object):
     def __init__(self):
         self.__mode = None
+        self.__follow_mode = None
         self.__onlyCrawl_switch = None
         self.__excludeCrawl_switch = None
         self.__onlyCrawl_screen_name = None
@@ -21,6 +22,14 @@ class SpiderConfigEntity(object):
         self.__excludeCrawl_uid = None
         self.__date = None
         self.__spiderFilter = None
+
+    @property
+    def follow_mode(self):
+        return self.__follow_mode
+
+    @follow_mode.setter
+    def follow_mode(self, follow_mode):
+        self.__follow_mode = follow_mode
 
     @property
     def mode(self):

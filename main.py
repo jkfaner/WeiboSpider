@@ -13,7 +13,8 @@ import time
 from typing import List
 
 from entity.userEntity import UserEntity
-from init import redisPoolObj, mysqlPool
+from entity.weiboEntity import WeiboEntity
+from init import redisPoolObj, mysqlPool, spider_config
 from middleware.spiderMinddleware import SpiderMinddleware
 from request.download import Download
 from request.fetch import Session
@@ -24,44 +25,58 @@ from utils.exception import ParameterError, DateError
 from utils.logger import logger
 
 
-class Main(SpiderMinddleware,Session):
+class InitMain(SpiderMinddleware, Session):
     requestIter = RequestIter()
     download = Download()
 
-    def get_follow(self, mode: str):
+    def start_download(self, blogs: List[WeiboEntity], user: UserEntity):
         """
-        爬取关注的数据
-        :param mode:
+        开始下载：
+            数据筛选&下载
+        :param blogs:
+        :param user:
         :return:
         """
-        if mode == constants.SPIDER_FOLLOW_MODE:
+        download_datas = self.download.filter_download(blogs=blogs, user=user)
+        self.download.startDownload(download_datas)
+
+
+class FollowMain(InitMain):
+
+    def get_follow(self, spider_follow_mode: str):
+        """
+        爬取关注的数据
+        :param spider_follow_mode:
+        :return:
+        """
+        if spider_follow_mode == constants.SPIDER_FOLLOW_MODE:
             # 默认获取用户关注
             # 获取uid
             login = Login()
             cookies_item = login.select_cookies()
             if cookies_item:
-                uid =cookies_item['uid']
+                uid = cookies_item['uid']
             else:
                 login.login_online(session=self.session, insert=True)
                 cookies_item = login.select_cookies()
-                uid =cookies_item['uid']
+                uid = cookies_item['uid']
 
             for item in self.requestIter.getUserFollowIter(uid=uid):
                 yield self.parse_user(item)
 
-        elif mode == constants.SPIDER_FOLLOW_MODE_NEW:
+        elif spider_follow_mode == constants.SPIDER_FOLLOW_MODE_NEW:
             # 通过获取用户最新关注顺序
             for item in self.requestIter.getUserFollowByNewFollowIter():
                 yield self.parse_user(item)
 
-        elif mode == constants.SPIDER_FOLLOW_MODE_NEW_PUBLISH:
+        elif spider_follow_mode == constants.SPIDER_FOLLOW_MODE_NEW_PUBLISH:
             # 通过获取最新有发布的用户顺序
             for item in self.requestIter.getUserFollowByNewPublicIter():
                 yield self.parse_user(item)
         else:
-            raise ParameterError("参数错误：'{}'不在规则范围内。".format(mode))
+            raise ParameterError("参数错误：'{}'不在规则范围内。".format(spider_follow_mode))
 
-    def get_blog(self,users:List[UserEntity]):
+    def get_blog(self, users: List[UserEntity]):
         """
         获取博客
         :param user:
@@ -71,21 +86,34 @@ class Main(SpiderMinddleware,Session):
             for blog in self.requestIter.getUserBlogIter(uid=user.idstr):
                 blogs = None
                 try:
-                    blogs = self.filter_blog(response=blog,user=user)
+                    blogs = self.filter_blog(response=blog, user=user)
                 except DateError as e:
                     blogs = e.args[1]
                     break
                 finally:
                     if blogs:
-                        yield blogs,user
+                        yield blogs, user
                     time.sleep(2)
 
 
+class Main(FollowMain):
+
     def run(self):
-        for users in self.get_follow("最新关注"):
-            for blog,user in self.get_blog(users=users):
-                download_datas = self.download.filter_download(blogs=blog,user=user)
-                self.download.startDownload(download_datas)
+        """
+        运行
+        :return:
+        """
+        if spider_config.mode == constants.SPIDER_MODE_FOLLOW:
+            # 爬取关注
+            for users in self.get_follow(spider_follow_mode=spider_config.follow_mode):
+                for blogs, user in self.get_blog(users=users):
+                    self.start_download(blogs=blogs, user=user)
+                    
+        elif spider_config.mode == constants.SPIDER_MODE_REFRESH:
+            # TODO 刷微博
+            raise Exception("未定义：{}".format(spider_config.mode))
+        else:
+            raise ParameterError("参数错误：'{}'不在规则范围内。".format(spider_config.mode))
 
 
 if __name__ == '__main__':
@@ -97,4 +125,4 @@ if __name__ == '__main__':
         logger.info("关闭mysql中...")
         mysqlPool.dispose()
         logger.info("等待中...")
-        time.sleep(60*30)
+        time.sleep(60 * 30)

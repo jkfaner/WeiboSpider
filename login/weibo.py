@@ -27,7 +27,7 @@ class weiboPC():
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items(): setattr(self, key, value)
-        self.info = 'login in weibo in pc mode'
+        self.info = 'login in weibo in pc spider_follow_mode'
         self.session = requests.Session()
         self.__initialize()
 
@@ -127,7 +127,7 @@ class weiboMobile():
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items(): setattr(self, key, value)
-        self.info = 'login in weibo in mobile mode'
+        self.info = 'login in weibo in mobile spider_follow_mode'
         self.session = requests.Session()
         self.__initialize()
 
@@ -227,7 +227,7 @@ class weiboScanqr(ExtractorApi):
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items(): setattr(self, key, value)
-        self.info = 'login in weibo in scanqr mode'
+        self.info = 'login in weibo in scanqr spider_follow_mode'
         self.cur_path = os.getcwd()
         self.session = requests.Session()
         self.__initialize()
@@ -306,7 +306,7 @@ class weibo():
             Input:
                 --username: 用户名
                 --password: 密码
-                --mode: mobile/pc/scanqr
+                --spider_follow_mode: mobile/pc/scanqr
                 --crack_captcha_func: 若提供验证码接口, 则利用该接口来实现验证码的自动识别
                 --proxies: 为requests.Session()设置代理
             Return:
@@ -324,10 +324,10 @@ class weibo():
 
     def login(self, username='', password='', mode='scanqr', crack_captcha_func=None, **kwargs):
         '''登录函数'''
-        assert mode in self.supported_modes, 'unsupport mode %s in weibo.login' % mode
+        assert mode in self.supported_modes, 'unsupport spider_follow_mode %s in weibo.login' % mode
         selected_api = self.supported_modes[mode]
         if not selected_api.is_callable: raise NotImplementedError(
-            'not be implemented for mode %s in weibo.login' % mode)
+            'not be implemented for spider_follow_mode %s in weibo.login' % mode)
         args = {
             'username': username,
             'password': password,
