@@ -139,9 +139,5 @@ if __name__ == '__main__':
     while True:
         m = Main()
         m.run()
-        logger.info("关闭redis中...")
-        redisPoolObj.disconnect()
-        logger.info("关闭mysql中...")
-        mysqlPool.dispose()
         logger.info("等待中...")
         time.sleep(60 * 5)

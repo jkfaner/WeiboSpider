@@ -28,6 +28,24 @@ class DownloadMiddleware(object):
         self.rootPath = os.path.join(download_config.root, "weibo")
         if not os.path.exists(self.rootPath):
             os.makedirs(self.rootPath)
+    @staticmethod
+    def get_file_suffix(url):
+        """
+        通过url确定文件后缀
+        # url = "http://zzx.sinaimg.cn/large/008bRrn7ly1gzolla2v1yj564w3g94qv2.jpg?KID=imgbed,photo&Expires=1677222140&ssig=NZi9yMSvUa&uid=7367188627&referer=weibo.com"
+        # url = "http://zzx.sinaimg.cn/large/008bRrn7ly1gzolla2v1yj564w3g94qv2.jpg"
+        # url = "https://video.weibo.com/media/play?livephoto=https%3A%2F%2Fus.sinaimg.cn%2F001rxuzpgx07TMPgS3TG0f0f0100mrIJ0k01.mov"
+        :param url:
+        :return:
+        """
+        http_path = os.path.split(url)
+        filename = http_path[1].split("?")[0]
+        if "." in filename:
+            suffix = filename.split(".")[-1]
+        else:
+            livephoto_path = http_path[1].split("?")[1]
+            suffix = livephoto_path.split(".")[-1]
+        return suffix
 
     def distribute_data(self, blogs: List[WeiboEntity], user: UserEntity) -> List[DownloadEntity]:
         """
@@ -54,7 +72,7 @@ class DownloadMiddleware(object):
 
             # 图片
             for image in blog.images:
-                suffix = os.path.split(image['url'])[-1].split(".")[-1]
+                suffix = self.get_file_suffix(image["url"])
                 filename = "{}_{}.{}".format(base_filename, image['index'], suffix)
 
                 image_download_entity = DownloadEntity()
@@ -67,7 +85,7 @@ class DownloadMiddleware(object):
 
             # livephoto
             for livephoto in blog.livephoto_video:
-                suffix = os.path.split(livephoto['url'])[-1].split(".")[-1]
+                suffix = self.get_file_suffix(livephoto["url"])
                 filename = "{}_{}.{}".format(base_filename, livephoto['index'], suffix)
 
                 livephoto_download_entity = DownloadEntity()
@@ -152,15 +170,19 @@ class DownloadMiddleware(object):
         """
         是否已经下载
         包含下载完成的以及404错误
+        # 注意：如果文件被删除且提示redis数库中已经存在 那么文件将继续下载！！！
+        # 注意：图片下载地址为静态地址 视频下载地址为动态地址！存在重复写入同文件数据！！！
         :param id:
         :param url:
         :param filepath:
         :return:
         """
         key = getRedisKey(blog_id=blog_id, url=url, filepath=filepath)
+        # 检查文件是否存在 存在分为两种情况：完整数据文件 非完整数据文件（该类数据会继续下载）
+        file_in_path = os.path.exists(filepath)
         finished = redisPool.hexists(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=key)
         error_404 = redisPool.hexists(name=constants.REDIS_DOWNLOAD_FAIL_NAME, key=key)
-        if finished or error_404:
+        if finished or error_404 or not file_in_path:
             return True
         return False
 
@@ -172,7 +194,9 @@ class DownloadMiddleware(object):
         new_download_datas = list()
         for download_data in download_datas:
             path,filepath = self.update_folder(download_data)
-            # 是否已经下载 包含下载完成的以及404错误的
+            # 是否已经下载 包含下载完成的以及404错误的以及该路径文件是否存在
+            # 注意：如果文件被删除且提示redis数库中已经存在 那么文件将继续下载！！！
+            # 注意：图片下载地址为静态地址 视频下载地址为动态地址！存在重复写入同文件数据！！！
             if not self.finish_download(blog_id=download_data.blog_id, url=download_data.url, filepath=filepath):
                 download_data.filepath = filepath
                 new_download_datas.append(download_data)
