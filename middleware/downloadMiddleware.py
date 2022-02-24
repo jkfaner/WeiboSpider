@@ -182,8 +182,15 @@ class DownloadMiddleware(object):
         file_in_path = os.path.exists(filepath)
         finished = redisPool.hexists(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=key)
         error_404 = redisPool.hexists(name=constants.REDIS_DOWNLOAD_FAIL_NAME, key=key)
-        if finished or error_404 or not file_in_path:
+        if error_404:
             return True
+        if not file_in_path:
+            if finished:
+                return True
+            return False
+        else:
+            if finished:
+                return True
         return False
 
     def filter_blogByDownloaded(self,download_datas:List[DownloadEntity]) -> List[DownloadEntity]:
