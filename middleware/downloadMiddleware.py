@@ -166,7 +166,7 @@ class DownloadMiddleware(object):
         return path, filepath
 
     @staticmethod
-    def finish_download(blog_id, url, filepath):
+    def  finish_download(blog_id, url, filepath):
         """
         是否已经下载
         包含下载完成的以及404错误
