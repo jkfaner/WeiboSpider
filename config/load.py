@@ -17,10 +17,11 @@ from entity.downloadConfigEntity import DownloadConfigEntity
 from entity.loginEntity import LoginEntity
 from entity.mysqlEntity import MysqlEntity
 from entity.redisConfigEntity import RedisConfigEntity
-from entity.spiderConfigEntity import SpiderConfigEntity
-from utils.exception import IntError
+from entity.spiderConfigEntity import SpiderConfigEntity, SpiderCrawlItemConfig
+from utils.exception import IntError, ParameterError
 from utils.logger import logger
 from utils.tool import is_valid_date, load_json
+
 GLOBAL_CONFIG = Config()
 logger.info("配置文件加载成功...")
 
@@ -93,35 +94,76 @@ def load_downloadInfo() -> DownloadConfigEntity:
 
 def load_spiderInfo() -> SpiderConfigEntity:
     """
-    加载爬虫配置信息
-    :return:
-    """
+   加载爬虫配置信息
+   :return:
+   """
+
     spiderConfigEntity = SpiderConfigEntity()
     spiderConfigEntity.mode = GLOBAL_CONFIG.get("spider", "mode")
     spiderConfigEntity.follow_mode = GLOBAL_CONFIG.get("spider", "follow_mode")
-
-    spiderConfigEntity.onlyCrawl_switch = GLOBAL_CONFIG.getBoolean("spider", "onlyCrawl_switch")
-    spiderConfigEntity.excludeCrawl_switch = GLOBAL_CONFIG.getBoolean("spider", "excludeCrawl_switch")
-
     config = GLOBAL_CONFIG.get("spider", "config")
     config_path = os.path.join(os.getcwd(), config)
     if not os.path.exists(config_path):
-        raise Exception("配置的json文件不存在")
+        raise Exception("""配置的json文件不存在，请这样设置json文件格式：{
+  "onlyCrawl": {
+    "switch": 1,
+    "list": [
+      {
+        "date": "2021-01-01",
+        "screen_name": "xxx",
+        "uid": "12345678",
+        "filter": "original"
+      }
+    ]
+  },
+  "excludeCrawl": {
+    "switch": 1,
+    "list": [
+      {
+        "date": "2021-01-01",
+        "screen_name": "xxx",
+        "uid": "12345678",
+        "filter": "original"
+      }
+    ]
+  }
+}""")
+    json_data = load_json(config_path)
+    spiderConfigEntity.onlyCrawl_switch = json_data["onlyCrawl"]["switch"]
+    spiderConfigEntity.excludeCrawl_switch = json_data["excludeCrawl"]["switch"]
 
-    data = load_json(config_path)
-    oc_name = data["onlyCrawl_screen_name"]
-    oc_uid = data["onlyCrawl_uid"]
-    spiderConfigEntity.onlyCrawl_screen_name = sorted(set(oc_name), key=oc_name.index) if set(oc_name) else list()
-    spiderConfigEntity.onlyCrawl_uid = list(set(oc_uid)) if set(oc_uid) else list()
+    if spiderConfigEntity.onlyCrawl_switch:
+        onlyCrawl_item = dict()
+        for item in json_data["onlyCrawl"]["list"]:
+            spiderCrawlItemEntity = SpiderCrawlItemConfig()
+            date = item['date']
+            screen_name = item.get("screen_name")
+            uid = item.get("uid")
+            assert is_valid_date(date), "日期格式错误"
+            if (not screen_name) and (not uid):
+                raise ParameterError("配置文件参数错误：{}".format(item))
+            spiderCrawlItemEntity.date = date
+            spiderCrawlItemEntity.screen_name = screen_name
+            spiderCrawlItemEntity.uid = uid
+            spiderCrawlItemEntity.filter = item["filter"]
+            onlyCrawl_item[uid] = spiderCrawlItemEntity
+        spiderConfigEntity.onlyCrawl_item = [v for v in onlyCrawl_item.values()]
 
-    ec_name = data["excludeCrawl_screen_name"]
-    ec_uid = data["excludeCrawl_uid"]
-    spiderConfigEntity.excludeCrawl_screen_name = sorted(set(ec_name), key=ec_name.index) if set(ec_name) else list()
-    spiderConfigEntity.excludeCrawl_uid = list(set(ec_uid)) if set(ec_uid) else list()
+    if spiderConfigEntity.excludeCrawl_switch:
+        excludeCrawl_item = dict()
+        for item in json_data["excludeCrawl"]["list"]:
+            spiderCrawlItemEntity = SpiderCrawlItemConfig()
+            date = item['date']
+            screen_name = item.get("screen_name")
+            uid = item.get("uid")
+            assert is_valid_date(date), "日期格式错误"
+            if (not screen_name) and (not uid):
+                raise ParameterError("配置文件参数错误：{}".format(item))
+            spiderCrawlItemEntity.date = date
+            spiderCrawlItemEntity.screen_name = screen_name
+            spiderCrawlItemEntity.uid = uid
+            spiderCrawlItemEntity.filter = item["filter"]
+            excludeCrawl_item[uid] = spiderCrawlItemEntity
+        spiderConfigEntity.excludeCrawl_item = [v for v in excludeCrawl_item.values()]
 
-    date = GLOBAL_CONFIG.get("spider", "date")
-    s_filter = GLOBAL_CONFIG.get("spider", "filter")
-    assert is_valid_date(date), "日期格式错误"
-    spiderConfigEntity.date = date
-    spiderConfigEntity.spiderFilter = s_filter
     return spiderConfigEntity

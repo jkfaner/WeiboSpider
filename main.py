@@ -10,17 +10,18 @@
 @Desc:
 """
 import time
-from typing import List
+from typing import List, Tuple
 
+import utils.businessConstants as constants
+from entity.spiderConfigEntity import SpiderCrawlItemConfig
 from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
-from init import redisPoolObj, mysqlPool, spider_config
+from init import spider_config
 from middleware.spiderMinddleware import SpiderMinddleware
 from request.download import Download
 from request.fetch import Session
 from request.login import Login
 from request.requestIter import RequestIter
-import utils.businessConstants as constants
 from utils.exception import ParameterError, DateError
 from utils.logger import logger
 
@@ -76,17 +77,17 @@ class FollowMain(InitMain):
         else:
             raise ParameterError("参数错误：'{}'不在规则范围内。".format(spider_follow_mode))
 
-    def get_blog(self, users: List[UserEntity]):
+    def get_blog(self, users: List[Tuple[UserEntity, SpiderCrawlItemConfig]]):
         """
         获取博客
         :param user:
         :return:
         """
-        for user in users:
+        for user, user_crawl in users:
             for blog in self.requestIter.getUserBlogIter(uid=user.idstr):
                 blogs = None
                 try:
-                    blogs = self.filter_blog(response=blog, user=user)
+                    blogs = self.filter_blog(response=blog, user=user, user_crawl=user_crawl)
                 except DateError as e:
                     blogs = e.args[1]
                     break
@@ -94,25 +95,6 @@ class FollowMain(InitMain):
                     if blogs:
                         yield blogs, user
                     time.sleep(2)
-
-    def listener(self):
-        """
-        监听是否有博主更新数据
-            1.监听是否有新关注的用户
-                1.1 有新关注->是否需要爬取->爬取
-            2.监听关注用户有无更新内容
-                2.1 有更新->是否需要爬取->爬取
-        1.通过访问关注者最新关注接口检测是否有更新的用户
-        2.通过访问关注者最新发布接口检测是否有更新的用户
-        注：优先爬取先关注的用户数据
-        :return:
-        """
-        # TODO 开发中
-        for item in self.requestIter.getUserFollowByNewPublicIter():
-            users = self.parse_user(item)
-            for blogs,user in self.get_blog(users=users):
-                self.start_download(blogs=blogs, user=user)
-
 
 
 class Main(FollowMain):

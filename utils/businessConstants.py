@@ -27,6 +27,4 @@ DOWNLOAD_PATH_VIDEO_ORIGINAL_STR = "video/原创微博视频"
 
 REDIS_DOWNLOAD_FINISH_NAME = "weibo_blogFinished"
 REDIS_DOWNLOAD_FAIL_NAME = "weibo_blog404"
-REDIS_USER_BLOGS_NAME = "weibo_userBlogs"
-
 

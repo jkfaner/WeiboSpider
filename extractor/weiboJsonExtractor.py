@@ -144,8 +144,8 @@ class ExtractorWeibo(ExtractorUserInfo):
         """
         weiboEntity = WeiboEntity()
         # 检查是否是置顶 置顶数据在筛选过程中不中断
-        is_top = self.find_first_data(resp=item,target="isTop")
-        if is_top and isinstance(is_top,int) and is_top==1:
+        is_top = self.find_first_data(resp=item, target="isTop")
+        if is_top and isinstance(is_top, int) and is_top == 1:
             weiboEntity.is_top = True
         else:
             weiboEntity.is_top = False
@@ -206,14 +206,14 @@ class ExtractorWeibo(ExtractorUserInfo):
         # 如果是转发 即有retweeted_status对象 则page_info应该属于retweeted_status对象中
         # 如果是原创 即retweeted_status对象为空（或不存在）则的page_info应该属于weiboObj对象中
         retweeted_item = self.find_first_data(item, "retweeted_status")
-        if retweeted_item:
-            weiboEntity = self.__extractor_info(item=retweeted_item, is_original=False)
-            weiboTypeEntity.forward = weiboEntity
-
         if "retweeted_status" in item:
             del item['retweeted_status']
 
-        weiboEntity = self.__extractor_info(item=item, is_original=True)
-        weiboTypeEntity.original = weiboEntity
+        original_weiboEntity = self.__extractor_info(item=item, is_original=True)
+        weiboTypeEntity.original = original_weiboEntity
+
+        if retweeted_item:
+            forward_weiboEntity = self.__extractor_info(item=retweeted_item, is_original=False)
+            weiboTypeEntity.forward = forward_weiboEntity
 
         return weiboTypeEntity

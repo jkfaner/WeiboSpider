@@ -99,6 +99,8 @@ def getRedisKey(blog_id, url, filepath):
     :param filepath:
     :return:
     """
+    if "?" in url:
+        url = url.split("?")[0]
     str_data = f"{blog_id}&{url}&{filepath}"
     return get_str_md5(str_data=str_data)
 

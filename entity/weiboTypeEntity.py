@@ -18,6 +18,8 @@ class WeiboTypeEntity(object):
     def __init__(self):
         self.__forward = None
         self.__original = None
+        self.__original_uid = None
+        self.__forward_uid = None
 
     @property
     def original(self):
@@ -26,6 +28,22 @@ class WeiboTypeEntity(object):
     @original.setter
     def original(self, original):
         self.__original = original
+
+    @property
+    def original_uid(self):
+        return self.__original_uid
+
+    @original_uid.setter
+    def original_uid(self, original_uid):
+        self.__original_uid = original_uid
+
+    @property
+    def forward_uid(self):
+        return self.__forward_uid
+
+    @forward_uid.setter
+    def forward_uid(self, forward_uid):
+        self.__forward_uid = forward_uid
 
     @property
     def forward(self):
