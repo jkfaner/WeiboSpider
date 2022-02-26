@@ -38,14 +38,19 @@ class DownloadMiddleware(object):
         :param url:
         :return:
         """
-        http_path = os.path.split(url)
-        filename = http_path[1].split("?")[0]
-        if "." in filename:
-            suffix = filename.split(".")[-1]
-        else:
-            livephoto_path = http_path[1].split("?")[1]
-            suffix = livephoto_path.split(".")[-1]
-        return suffix
+        try:
+            http_path = os.path.split(url)
+            filename = http_path[1].split("?")[0]
+            if "." in filename:
+                suffix = filename.split(".")[-1]
+            else:
+                livephoto_path = http_path[1].split("?")[1]
+                suffix = livephoto_path.split(".")[-1]
+            return suffix
+        except IndexError:
+            logger.error("通过url确定文件后缀:{}".format(url))
+            import sys
+            sys.exit()
 
     def distribute_data(self, blogs: List[WeiboEntity], user: UserEntity) -> List[DownloadEntity]:
         """

@@ -15,7 +15,6 @@ import json
 import time
 from concurrent import futures
 from urllib.parse import urlencode
-
 from tqdm import tqdm
 
 

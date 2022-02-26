@@ -13,6 +13,7 @@ import time
 from typing import List, Tuple
 
 import utils.businessConstants as constants
+from config.load import create_new_spiderInfo
 from entity.spiderConfigEntity import SpiderCrawlItemConfig
 from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
@@ -117,9 +118,17 @@ class Main(FollowMain):
             raise ParameterError("参数错误：'{}'不在规则范围内。".format(spider_config.mode))
 
 
+def main():
+    m = Main()
+    m.run()
+
+
 if __name__ == '__main__':
     while True:
-        m = Main()
-        m.run()
-        logger.info("等待中...")
-        time.sleep(60 * 5)
+        main()
+        create_new_spiderInfo()
+        sleep_time = 60 * 5
+        while sleep_time > 0:
+            print('\r等待再次运行，倒计时(s):{}'.format(sleep_time), flush=True, end='')
+            time.sleep(1)
+            sleep_time -= 1

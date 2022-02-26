@@ -163,7 +163,7 @@ class FilterBlog(ParseUser):
 class SpiderMinddleware(FilterBlog):
 
     def __init__(self):
-        logger.info(f"爬虫中间件：\t{EntityToJson(spider_config)}")
+        logger.info(f"\n爬虫中间件：\t{EntityToJson(spider_config)}")
 
     def parse_user(self, response) -> List[Tuple[UserEntity, SpiderCrawlItemConfig]]:
         """

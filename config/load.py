@@ -9,6 +9,8 @@
 @File:load.py
 @Desc:
 """
+import datetime
+import json
 import os
 from multiprocessing import cpu_count
 
@@ -167,3 +169,35 @@ def load_spiderInfo() -> SpiderConfigEntity:
         spiderConfigEntity.excludeCrawl_item = [v for v in excludeCrawl_item.values()]
 
     return spiderConfigEntity
+
+def create_new_spiderInfo():
+    spiderConfigEntity = load_spiderInfo()
+    new_item = {"onlyCrawl":dict(switch=0,list=list()),"excludeCrawl":dict(switch=0,list=list())}
+
+    if spiderConfigEntity.excludeCrawl_switch:
+        new_item['excludeCrawl']["switch"] = 1
+        for item in spiderConfigEntity.excludeCrawl_item:
+            new_item["excludeCrawl"]["list"].append({
+                "date": datetime.datetime.now().strftime("%Y-%m-%d"),
+                "screen_name": item.screen_name,
+                "uid": item.uid,
+                "filter": item.filter
+            })
+    else:
+        new_item['excludeCrawl']["switch"] = 0
+
+    if spiderConfigEntity.onlyCrawl_switch:
+        new_item['onlyCrawl']["switch"] = 1
+        for item in spiderConfigEntity.onlyCrawl_item:
+            new_item["onlyCrawl"]["list"].append({
+                "date": datetime.datetime.now().strftime("%Y-%m-%d"),
+                "screen_name": item.screen_name,
+                "uid": item.uid,
+                "filter": item.filter
+            })
+    else:
+        new_item['onlyCrawl']["switch"] = 0
+
+    with open(os.path.join(os.getcwd(),"new-config.json"), "w") as f:
+        json.dump(new_item,f,ensure_ascii=False)
+        
