@@ -86,7 +86,9 @@ class ExtractorWeibo(ExtractorUserInfo):
         pic_ids = self.find_first_data(item, "pic_ids")
         pic_infos = self.find_first_data(item, "pic_infos")
         for index, id in enumerate(pic_ids, 1):
-            pic = pic_infos[id]
+            pic = pic_infos.get(id)
+            if not pic:
+                continue
             # 图片尺寸大小：large>mw2000>orj1080>orj960>wap360>wap180
             # 对应的对象是：largest>mw2000>original>large>bmiddle>thumbnail
             # 优先下载large尺寸的图片
