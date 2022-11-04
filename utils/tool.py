@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """
-@Author:liamlee
+@Author:jkfaner
 @Contact:geektalk@qq.com
 @Ide:PyCharm
 @Time:2022/2/17 22:10
@@ -134,6 +134,28 @@ def thread_pool(method, data, **kwargs):
         res = tqdm(executor.map(method, data), total=len(data))
         res.set_description(prompt)
         return len(list(res))
+
+def process_pool(method, data, **kwargs):
+    """
+    多进程任务
+    :param method: 函数
+    :param data: 可遍历列表数据
+    :param kwargs:
+    :return:
+    """
+    if isinstance(kwargs, dict):
+        process_num = kwargs.get('process_num', 1)
+        prompt = kwargs.get('prompt', '多进程任务->[线程数:%s]' % process_num)
+    else:
+        raise Exception('kwargs is not dict')
+
+    ctime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    prompt = '[%s] 多进程任务 [进程数:%s]-> %s ->' % (ctime, process_num, prompt)
+    with futures.ProcessPoolExecutor(max_workers=process_num) as executor:
+        res = tqdm(executor.map(method, data), total=len(data))
+        res.set_description(prompt)
+        return len(list(res))
+
 
 
 def EntityToJson(entity):
