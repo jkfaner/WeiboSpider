@@ -107,7 +107,7 @@ class Login(object):
         """
         session.cookies = cookiejar
 
-    def is_login(self,fetch):
+    def is_login(self, fetch):
         """
         检查cookie是否失效
         :param fetch:
@@ -120,7 +120,7 @@ class Login(object):
             return False
         return True
 
-    def login_online(self,session:Session,insert:bool):
+    def login_online(self, session: Session, insert: bool):
         """
         登录
         :param insert: 插入数据：True，更新数据：False
@@ -128,15 +128,16 @@ class Login(object):
         """
         logger.info("联网登录...")
         login_rest, login_session = self.login_by_account()
+        uid = login_rest['uid']
         cookies = self.dict_from_cookiejar(login_session=login_session)
         if insert:
-            self.insert_cookies(uid=login_rest['uid'], cookies=cookies)
+            self.insert_cookies(uid=uid, cookies=cookies)
         else:
-            self.update_cookies(uid=login_rest['uid'], cookies=cookies)
+            self.update_cookies(uid=uid, cookies=cookies)
         cookiejar = self.cookiejar_from_str(cookies)
         self.set_cookies(session=session, cookiejar=cookiejar)
 
-    def login_localhost(self,session:Session):
+    def login_localhost(self, session: Session):
         """
         本地登录
         :param session:

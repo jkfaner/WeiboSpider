@@ -1,0 +1,7 @@
+{
+  "login": {
+    "select_cookies": "SELECT username,password,uid,cookies FROM spider_login WHERE username = ${}",
+    "insert_cookies": "INSERT INTO spider_login (username,password,uid,cookies) VALUES (${},${},${},${})",
+    "update_cookies": "UPDATE spider_login SET cookies=$ WHERE uid=${}"
+  }
+}
