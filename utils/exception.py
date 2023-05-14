@@ -9,17 +9,6 @@
 @File:exception.py
 @Desc:
 """
-
-
-class IntError(Exception):
-    pass
-
-
-class ParameterError(Exception):
-    # 参数错误
-    pass
-
-
 class DateError(Exception):
     """日期错误"""
     pass

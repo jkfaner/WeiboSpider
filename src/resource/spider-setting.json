@@ -1,0 +1,60 @@
+{
+  "login": {
+    "uid": "7367188627"
+  },
+  "download": {
+    "root": "/Users/llb/Pictures",
+    "thread": true,
+    "workers": 8
+  },
+  "spider-list": {
+    "filter-user": true,
+    "filter-blog": true,
+    "filter-type": "original",
+    "original": [
+      "https://weibo.com/u/5703433758",
+      "https://weibo.com/u/5620230193",
+      "https://weibo.com/u/3700763437",
+      "https://weibo.com/u/3887046428",
+      "https://weibo.com/u/7772277118",
+      "https://weibo.com/u/2645500992",
+      "https://weibo.com/u/7680590708",
+      "https://weibo.com/u/6091593545",
+      "https://weibo.com/u/7796248561",
+      "https://weibo.com/u/7728580677",
+      "https://weibo.com/u/7628044408",
+      "https://weibo.com/u/6627371236",
+      "https://weibo.com/u/6387193336",
+      "https://weibo.com/u/6229606632",
+      "https://weibo.com/u/6728017004",
+      "https://weibo.com/u/6728017004",
+      "https://weibo.com/u/7476335465"
+    ],
+    "forward": [],
+    "backups": [
+      "https://weibo.com/u/7628044408",
+      "https://weibo.com/u/7225091153",
+      "https://weibo.com/u/1942690145",
+      "https://weibo.com/u/6368916716",
+      "https://weibo.com/u/2398867155",
+      "https://weibo.com/u/5688290063",
+      "https://weibo.com/u/3184158904",
+      "https://weibo.com/u/5245691753",
+      "https://weibo.com/u/5292770234",
+      "https://weibo.com/u/2080376511",
+      "https://weibo.com/u/2704945845",
+      "https://weibo.com/u/7717308786",
+      "https://weibo.com/u/2049075312",
+      "https://weibo.com/u/5522386353",
+      "https://weibo.com/u/1838717532",
+      "https://weibo.com/u/1963546385",
+      "https://weibo.com/u/7058255863",
+      "https://weibo.com/u/7719953899",
+      "https://weibo.com/u/1773761872",
+      "https://weibo.com/u/1837568962",
+      "https://weibo.com/u/7494359702",
+      "https://weibo.com/u/2793306070",
+      "https://weibo.com/u/2331156311"
+    ]
+  }
+}

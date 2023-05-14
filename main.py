@@ -43,25 +43,6 @@ class BaseFollowObject(InitMain):
     def spider(self):
         yield []
 
-    def get_blog(self, users: List[UserEntity]):
-        """
-        获取博客
-        :param users:
-        :return:
-        """
-        for user in users:
-            for blog in self.requestIter.getUserBlogIter(uid=user.idstr):
-                blogs = None
-                try:
-                    blogs = self.extractor_blog(response=blog, user=user)
-                except DateError as e:
-                    blogs = e.args[1]
-                    break
-                finally:
-                    if blogs:
-                        yield blogs, user
-                    time.sleep(2)
-
 
 class SpiderDefaultFollow(BaseFollowObject):
     """默认爬虫规则"""
@@ -112,6 +93,25 @@ class SpiderFollow(BaseSpiderObject):
     def __init__(self, follow: BaseFollowObject):
         super(SpiderFollow, self).__init__()
         self.follow = follow
+
+    def get_blog(self, users: List[UserEntity]):
+        """
+        获取博客
+        :param users:
+        :return:
+        """
+        for user in users:
+            for blog in self.requestIter.getUserBlogIter(uid=user.idstr):
+                blogs = None
+                try:
+                    blogs = self.extractor_blog(response=blog, user=user)
+                except DateError as e:
+                    blogs = e.args[1]
+                    break
+                finally:
+                    if blogs:
+                        yield blogs, user
+                    time.sleep(2)
 
     def run(self, action):
         for users in self.follow.spider():
