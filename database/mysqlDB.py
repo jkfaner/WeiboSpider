@@ -15,8 +15,6 @@ from dbutils.pooled_db import PooledDB
 from pymysql.cursors import DictCursor
 
 
-
-
 class MySQlPool(object):
     """
     MYSQL数据库对象，负责产生数据库连接 , 此类中的连接采用连接池实现获取连接对象：conn = Mysql.getConn()
@@ -179,4 +177,3 @@ class MySQlPool(object):
     def __exit__(self):
         self._cursor.close()
         self._conn.close()
-

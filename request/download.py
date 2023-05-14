@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 import utils.businessConstants as constants
 from entity.downloadEntity import DownloadEntity
-from init import download_config, redisPool
+from init import redisPool, SpiderSetting
 from middleware.downloadMiddleware import DownloadMiddleware
 from utils.exception import NOTContentLengthError, FinishedError, NotFound
 from utils.logger import logger
@@ -25,6 +25,8 @@ from utils.tool import getRedisKey, thread_pool, EntityToJson
 
 
 class Download(DownloadMiddleware):
+    __thread = SpiderSetting.get("download").get("thread")
+    __workers = SpiderSetting.get("download").get("workers")
 
     @staticmethod
     def __get_file_size(url, filepath) -> tuple:
@@ -103,7 +105,7 @@ class Download(DownloadMiddleware):
             return
 
         # 开启线程下载就没有详情精度条提示 只有完成精度条提示
-        if download_config.thread:
+        if self.__thread:
             self.__segmented_download(item, first_byte, file_size, False)
         else:
             self.__segmented_download(item, first_byte, file_size, True)
@@ -119,11 +121,11 @@ class Download(DownloadMiddleware):
         """
         if not download_list:
             return
-        if download_config.thread:
+        if self.__thread:
             thread_pool(
                 method=self.__download,
                 data=download_list,
-                thread_num=min(len(download_list), download_config.workers),
+                thread_num=min(len(download_list), self.__workers),
             )
         else:
             for _ in download_list:

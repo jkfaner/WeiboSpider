@@ -41,33 +41,6 @@ def load_loginInfo() -> LoginEntity:
     return login
 
 
-def load_mysqlInfo() -> MysqlEntity:
-    """
-    加载mysql配置信息
-    :return:
-    """
-    mysql = MysqlEntity()
-    mysql.host = GLOBAL_CONFIG.get("mysql", "host")
-    mysql.port = GLOBAL_CONFIG.getInt("mysql", "port")
-    mysql.user = GLOBAL_CONFIG.get("mysql", "user")
-    mysql.password = GLOBAL_CONFIG.get("mysql", "password")
-    mysql.database = GLOBAL_CONFIG.get("mysql", "database")
-    return mysql
-
-
-def load_redis() -> RedisConfigEntity:
-    """
-    加载redis配置信息
-    :return:
-    """
-    redis = RedisConfigEntity()
-    redis.host = GLOBAL_CONFIG.get("redis", "host")
-    redis.port = GLOBAL_CONFIG.getInt("redis", "port")
-    redis.password = GLOBAL_CONFIG.get("redis", "password")
-    redis.db = GLOBAL_CONFIG.getInt("redis", "db")
-    return redis
-
-
 def load_downloadInfo() -> DownloadConfigEntity:
     """
     加载下载配置信息
@@ -170,9 +143,10 @@ def load_spiderInfo() -> SpiderConfigEntity:
 
     return spiderConfigEntity
 
+
 def create_new_spiderInfo():
     spiderConfigEntity = load_spiderInfo()
-    new_item = {"onlyCrawl":dict(switch=0,list=list()),"excludeCrawl":dict(switch=0,list=list())}
+    new_item = {"onlyCrawl": dict(switch=0, list=list()), "excludeCrawl": dict(switch=0, list=list())}
 
     if spiderConfigEntity.excludeCrawl_switch:
         new_item['excludeCrawl']["switch"] = 1
@@ -198,6 +172,5 @@ def create_new_spiderInfo():
     else:
         new_item['onlyCrawl']["switch"] = 0
 
-    with open(os.path.join(os.getcwd(),"new-config.json"), "w") as f:
-        json.dump(new_item,f,ensure_ascii=False)
-        
+    with open(os.path.join(os.getcwd(), "new-config.json"), "w") as f:
+        json.dump(new_item, f, ensure_ascii=False)

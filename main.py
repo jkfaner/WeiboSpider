@@ -10,24 +10,19 @@
 @Desc:
 """
 import time
-from typing import List, Tuple
+from typing import List
 
-import utils.businessConstants as constants
-from config.load import create_new_spiderInfo
-from entity.spiderConfigEntity import SpiderCrawlItemConfig
 from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
-from init import spider_config
-from middleware.spiderMinddleware import SpiderMinddleware
+from middleware.parse import Parse
 from request.download import Download
 from request.fetch import Session
 from request.login import Login
 from request.requestIter import RequestIter
-from utils.exception import ParameterError, DateError
-from utils.logger import logger
+from utils.exception import DateError
 
 
-class InitMain(SpiderMinddleware, Session):
+class InitMain(Parse, Session):
     requestIter = RequestIter()
     download = Download()
 
@@ -39,56 +34,26 @@ class InitMain(SpiderMinddleware, Session):
         :param user:
         :return:
         """
-        download_datas = self.download.filter_download(blogs=blogs, user=user)
+        download_datas = self.download.distribute_data(blogs=blogs, user=user)
         self.download.startDownload(download_datas)
 
 
-class FollowMain(InitMain):
+class BaseFollowObject(InitMain):
 
-    def get_follow(self, spider_follow_mode: str):
-        """
-        爬取关注的数据
-        :param spider_follow_mode:
-        :return:
-        """
-        if spider_follow_mode == constants.SPIDER_FOLLOW_MODE:
-            # 默认获取用户关注
-            # 获取uid
-            login = Login()
-            cookies_item = login.select_cookies()
-            if cookies_item:
-                uid = cookies_item['uid']
-            else:
-                login.login_online(session=self.session, insert=True)
-                cookies_item = login.select_cookies()
-                uid = cookies_item['uid']
+    def spider(self):
+        yield []
 
-            for item in self.requestIter.getUserFollowIter(uid=uid):
-                yield self.parse_user(item)
-
-        elif spider_follow_mode == constants.SPIDER_FOLLOW_MODE_NEW:
-            # 通过获取用户最新关注顺序
-            for item in self.requestIter.getUserFollowByNewFollowIter():
-                yield self.parse_user(item)
-
-        elif spider_follow_mode == constants.SPIDER_FOLLOW_MODE_NEW_PUBLISH:
-            # 通过获取最新有发布的用户顺序
-            for item in self.requestIter.getUserFollowByNewPublicIter():
-                yield self.parse_user(item)
-        else:
-            raise ParameterError("参数错误：'{}'不在规则范围内。".format(spider_follow_mode))
-
-    def get_blog(self, users: List[Tuple[UserEntity, SpiderCrawlItemConfig]]):
+    def get_blog(self, users: List[UserEntity]):
         """
         获取博客
-        :param user:
+        :param users:
         :return:
         """
-        for user, user_crawl in users:
+        for user in users:
             for blog in self.requestIter.getUserBlogIter(uid=user.idstr):
                 blogs = None
                 try:
-                    blogs = self.filter_blog(response=blog, user=user, user_crawl=user_crawl)
+                    blogs = self.extractor_blog(response=blog, user=user)
                 except DateError as e:
                     blogs = e.args[1]
                     break
@@ -98,37 +63,84 @@ class FollowMain(InitMain):
                     time.sleep(2)
 
 
-class Main(FollowMain):
+class SpiderDefaultFollow(BaseFollowObject):
+    """默认爬虫规则"""
 
-    def run(self):
-        """
-        运行
-        :return:
-        """
-        if spider_config.mode == constants.SPIDER_MODE_FOLLOW:
-            # 爬取关注
-            for users in self.get_follow(spider_follow_mode=spider_config.follow_mode):
-                for blogs, user in self.get_blog(users=users):
-                    self.start_download(blogs=blogs, user=user)
-
-        elif spider_config.mode == constants.SPIDER_MODE_REFRESH:
-            # TODO 刷微博
-            raise Exception("未定义：{}".format(spider_config.mode))
+    def spider(self):
+        print("默认爬虫规则")
+        # 获取uid
+        login = Login()
+        cookies_item = login.select_cookies()
+        if cookies_item:
+            uid = cookies_item['uid']
         else:
-            raise ParameterError("参数错误：'{}'不在规则范围内。".format(spider_config.mode))
+            login.login_online(session=self.session, insert=True)
+            cookies_item = login.select_cookies()
+            uid = cookies_item['uid']
+        for item in self.requestIter.getUserFollowIter(uid=uid):
+            yield self.extractor_user(item)
 
 
-def main():
-    m = Main()
-    m.run()
+class SpiderNewFollow(BaseFollowObject):
+    """爬取关注->最新关注顺序"""
+
+    def spider(self):
+        print("爬取关注->最新关注顺序")
+        for item in self.requestIter.getUserFollowByNewFollowIter():
+            yield self.extractor_user(item)
+
+
+class SpiderNewPublishFollow(BaseFollowObject):
+    """爬取关注->最新有发布的用户顺序"""
+
+    def spider(self):
+        print("爬取关注->最新有发布的用户顺序")
+        for item in self.requestIter.getUserFollowByNewPublicIter():
+            yield self.extractor_user(item)
+
+
+#############
+class BaseSpiderObject(BaseFollowObject):
+
+    def run(self, action):
+        pass
+
+
+class SpiderFollow(BaseSpiderObject):
+    """爬取关注"""
+
+    def __init__(self, follow: BaseFollowObject):
+        super(SpiderFollow, self).__init__()
+        self.follow = follow
+
+    def run(self, action):
+        for users in self.follow.spider():
+            for blogs, user in self.get_blog(users=users):
+                self.start_download(blogs=blogs, user=user)
+
+
+class SpiderRefresh(BaseSpiderObject):
+    """刷微博"""
+
+    def run(self, action):
+        print("SpiderRefresh->{}".format(action))
+
+
+class Spider(object):
+
+    def __init__(self, action: BaseSpiderObject):
+        self.action = action
+
+    def do(self, action):
+        self.action.run(action)
 
 
 if __name__ == '__main__':
-    while True:
-        main()
-        create_new_spiderInfo()
-        sleep_time = 60 * 5
-        while sleep_time > 0:
-            print('\r等待再次运行，倒计时(s):{}'.format(sleep_time), flush=True, end='')
-            time.sleep(1)
-            sleep_time -= 1
+    strategy = {}
+    strategy[1] = Spider(SpiderFollow(SpiderDefaultFollow()))
+    strategy[2] = Spider(SpiderFollow(SpiderNewFollow()))
+    strategy[3] = Spider(SpiderFollow(SpiderNewPublishFollow()))
+    strategy[4] = Spider(SpiderRefresh())
+    mode = input("1-4:")
+    csuper = strategy[int(mode)]
+    csuper.do("money")

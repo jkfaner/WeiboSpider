@@ -9,11 +9,16 @@
 @File:request.py
 @Desc:Request请求
 """
-from api import WeiBoAPI
+from init import SystemInfo
 from middleware.sessionMiddleware import SessionMiddleware
+from utils.tool import join_url
 
 
-class Request(SessionMiddleware, WeiBoAPI):
+class Request(SessionMiddleware):
+
+    def __init__(self):
+        self.spiderAPI = SystemInfo.get("Spider-API")
+        super(Request, self).__init__()
 
     def getUserFollow(self, uid: str, page: int):
         """
@@ -22,7 +27,7 @@ class Request(SessionMiddleware, WeiBoAPI):
         :param page: 页码
         :return:
         """
-        url = super(Request, self).getUserFollow(uid=uid, page=page)
+        url = join_url(url=self.spiderAPI.get("userFriends"), params=dict(page=page, uid=uid))
         return self.fetch_json(url=url)
 
     def getUserFollowByNewFollow(self, page: int, next_cursor: int = None) -> str:
@@ -35,7 +40,7 @@ class Request(SessionMiddleware, WeiBoAPI):
         :param next_cursor:
         :return:
         """
-        url = super(Request, self).getUserFollowByNewFollow(page=page, next_cursor=next_cursor)
+        url = join_url(url=self.spiderAPI.get("userFollow"), params=dict(page=page, next_cursor=next_cursor))
         return self.fetch_json(url=url)
 
     def getUserFollowByNewPublic(self, next_cursor: int) -> str:
@@ -47,7 +52,7 @@ class Request(SessionMiddleware, WeiBoAPI):
         :param next_cursor: 上一次请求next_cursor值
         :return:
         """
-        url = super(Request, self).getUserFollowByNewPublic(next_cursor=next_cursor)
+        url = join_url(url=self.spiderAPI.get("userFollow"), params=dict(next_cursor=next_cursor, sortType="timeDown"))
         return self.fetch_json(url=url)
 
     def getUserBlog(self, uid: str, page: int, since_id: str = None) -> str:
@@ -56,10 +61,12 @@ class Request(SessionMiddleware, WeiBoAPI):
         参数说明：
             1.首页没有since_id参数
             2.其他页面必须携带since_id
+            3.feature始终为0（已经写死）
         :param uid: 用户uid
         :param page: 页码
         :param since_id: 上一页since_id值
         :return:
         """
-        url = super(Request, self).getUserBlog(uid=uid, page=page, since_id=since_id)
+        url = join_url(url=self.spiderAPI.get("userBlog"),
+                       params=dict(uid=uid, page=page, since_id=since_id, feature=0))
         return self.fetch_json(url=url)

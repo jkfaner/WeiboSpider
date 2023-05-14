@@ -15,7 +15,8 @@ from typing import List
 from entity.downloadEntity import DownloadEntity
 from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
-from init import redisPool, mysqlPool, download_config
+from init import redisPool, mysqlPool, SpiderSetting, SystemSQL
+from middleware.aop import FilterAOP
 from utils.logger import logger
 from utils.tool import getRedisKey, time_formatting
 import utils.businessConstants as constants
@@ -25,9 +26,10 @@ class DownloadMiddleware(object):
 
     def __init__(self):
         # 创建weibo专属路径
-        self.rootPath = os.path.join(download_config.root, "weibo")
+        self.rootPath = os.path.join(SpiderSetting.get("download").get("root"), "weibo")
         if not os.path.exists(self.rootPath):
             os.makedirs(self.rootPath)
+
     @staticmethod
     def get_file_suffix(url):
         """
@@ -52,6 +54,7 @@ class DownloadMiddleware(object):
             import sys
             sys.exit()
 
+    @FilterAOP.filter_download
     def distribute_data(self, blogs: List[WeiboEntity], user: UserEntity) -> List[DownloadEntity]:
         """
         数据分发
@@ -110,7 +113,7 @@ class DownloadMiddleware(object):
         :param uid:
         :return:
         """
-        sql = "SELECT weibo_id,screen_name FROM weibo_user WHERE weibo_id=%s"
+        sql = SystemSQL.get("spider").get("select_weibo_user")
         result = mysqlPool.getOne(sql=sql, param=[uid])
         return result
 
@@ -122,7 +125,7 @@ class DownloadMiddleware(object):
         :param screen_name:
         :return:
         """
-        sql = "INSERT INTO weibo_user (weibo_id,screen_name) VALUES (%s,%s)  ON DUPLICATE KEY UPDATE screen_name=%s"
+        sql = SystemSQL.get("spider").get("update_weibo_user")
         mysqlPool.insert(sql=sql, param=[uid, screen_name, screen_name])
         mysqlPool.end()
 
@@ -171,13 +174,13 @@ class DownloadMiddleware(object):
         return path, filepath
 
     @staticmethod
-    def  finish_download(blog_id, url, filepath):
+    def finish_download(blog_id, url, filepath):
         """
         是否已经下载
         包含下载完成的以及404错误
         # 注意：如果文件被删除且提示redis数库中已经存在 那么文件将继续下载！！！
         # 注意：图片下载地址为静态地址 视频下载地址为动态地址！存在重复写入同文件数据！！！
-        :param id:
+        :param blog_id:
         :param url:
         :param filepath:
         :return:
@@ -197,29 +200,3 @@ class DownloadMiddleware(object):
             if finished:
                 return True
         return False
-
-    def filter_blogByDownloaded(self,download_datas:List[DownloadEntity]) -> List[DownloadEntity]:
-        """
-        通过已下载和404筛选
-        :return:
-        """
-        new_download_datas = list()
-        for download_data in download_datas:
-            path,filepath = self.update_folder(download_data)
-            # 是否已经下载 包含下载完成的以及404错误的以及该路径文件是否存在
-            # 注意：如果文件被删除且提示redis数库中已经存在 那么文件将继续下载！！！
-            # 注意：图片下载地址为静态地址 视频下载地址为动态地址！存在重复写入同文件数据！！！
-            if not self.finish_download(blog_id=download_data.blog_id, url=download_data.url, filepath=filepath):
-                download_data.filepath = filepath
-                new_download_datas.append(download_data)
-        return new_download_datas
-
-    def filter_download(self,blogs: List[WeiboEntity], user: UserEntity):
-        """
-        筛选下载数据
-        :param blogs:
-        :param user:
-        :return:
-        """
-        download_datas = self.distribute_data(blogs=blogs,user=user)
-        return self.filter_blogByDownloaded(download_datas=download_datas)

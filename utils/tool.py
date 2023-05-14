@@ -12,10 +12,31 @@
 import datetime
 import hashlib
 import json
+import os.path
+import sys
 import time
 from concurrent import futures
 from urllib.parse import urlencode
 from tqdm import tqdm
+
+def load_json(path: str)->dict:
+    filepath, filename = os.path.split(path)
+    name, ext = os.path.splitext(filename)
+    if ext != ".json":
+        sys.exit("{}:不是json文件类型".format(path))
+    with open(path, 'r') as f:
+        json_str = f.read()
+    if not is_json(json_str):
+        sys.exit("非法的json数据")
+    return json.loads(json_str)
+
+
+def is_json(myjson):
+    try:
+        json.loads(myjson)
+    except ValueError:
+        return False
+    return True
 
 
 def join_url(url: str, params: dict):
@@ -53,12 +74,7 @@ def is_valid_date(strdate):
         return False
 
 
-def load_json(path):
-    with open(path, 'r') as f:
-        return json.load(f)
-
-
-def time_formatting(created_at, usefilename:bool=True,strftime:bool=None):
+def time_formatting(created_at, usefilename: bool = True, strftime: bool = None):
     """
     时间格式化
     :param created_at: 'Fri Dec 24 03:49:03 +0800 2021'
@@ -103,6 +119,7 @@ def getRedisKey(blog_id, url, filepath):
     str_data = f"{blog_id}&{url}&{filepath}"
     return get_str_md5(str_data=str_data)
 
+
 def get_str_md5(str_data):
     """
     获取字符串md5值
@@ -135,6 +152,7 @@ def thread_pool(method, data, **kwargs):
         res.set_description(prompt)
         return len(list(res))
 
+
 def process_pool(method, data, **kwargs):
     """
     多进程任务
@@ -155,7 +173,6 @@ def process_pool(method, data, **kwargs):
         res = tqdm(executor.map(method, data), total=len(data))
         res.set_description(prompt)
         return len(list(res))
-
 
 
 def EntityToJson(entity):

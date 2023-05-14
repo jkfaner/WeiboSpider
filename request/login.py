@@ -11,20 +11,18 @@
 """
 import json
 import requests
+from DecryptLogin.core import weibo
 
 from requests import Session
 from requests.cookies import RequestsCookieJar
 
-from init import mysqlPool, login_config
-from login.weibo import weibo
-from utils.decrypt import AESStrDecrypt
+from init import SystemSQL, mysqlPool, SpiderSetting
 from utils.logger import logger
 
 
 class Login(object):
-
-    def __init__(self):
-        self.login_password = AESStrDecrypt.encrypt(login_config.password)
+    __login_sql = SystemSQL.get("login")
+    __login_setting = SpiderSetting.get("login")
 
     @staticmethod
     def login_by_account():
@@ -32,22 +30,15 @@ class Login(object):
         账号密码登录
         :return:
         """
-        wb_login = weibo()
-        login_rest, login_session = wb_login.login(
-            username=login_config.username,
-            password=login_config.password,
-            mode=login_config.mode
-        )
-        return login_rest, login_session
+        return weibo().login()
 
-    @staticmethod
-    def select_cookies() -> dict:
+    def select_cookies(self) -> dict:
         """
         查询数据库cookies信息
         :return:
         """
-        sql = f"SELECT username,password,uid,cookies FROM login_cookies WHERE username = %s"
-        select_result = mysqlPool.getOne(sql=sql, param=[login_config.username])
+        sql = self.__login_sql.get("select_cookies")
+        select_result = mysqlPool.getOne(sql=sql, param=[self.__login_setting.get("uid")])
         if not select_result:
             return {}
         s_cookies = select_result.get("cookies").decode("utf-8")
@@ -61,8 +52,8 @@ class Login(object):
         :param cookies:
         :return:
         """
-        sql = "INSERT INTO login_cookies (username,password,uid,cookies) VALUES (%s,%s,%s,%s)"
-        mysqlPool.update(sql=sql, param=[login_config.username, self.login_password, uid, cookies])
+        sql = self.__login_sql.get("insert_cookies")
+        mysqlPool.update(sql=sql, param=[uid, cookies])
         mysqlPool.end()
 
     def update_cookies(self, uid, cookies: str):
@@ -72,7 +63,7 @@ class Login(object):
         :param cookies:
         :return:
         """
-        sql = "UPDATE login_cookies SET cookies=%s WHERE uid=%s"
+        sql = self.__login_sql.get("update_cookies")
         mysqlPool.update(sql=sql, param=[cookies, uid])
         mysqlPool.end()
 
@@ -85,7 +76,7 @@ class Login(object):
         :return:
         """
         _cookies = requests.utils.dict_from_cookiejar(login_session.cookies)
-        return AESStrDecrypt.encrypt(json.dumps(_cookies))
+        return json.dumps(_cookies)
 
     @staticmethod
     def cookiejar_from_str(cookies: str) -> RequestsCookieJar:
@@ -94,7 +85,7 @@ class Login(object):
         :param cookies:
         :return:
         """
-        new_cookies = json.loads(AESStrDecrypt.decrypt(cookies))
+        new_cookies = json.loads(cookies)
         cookies_CookieJar = requests.utils.cookiejar_from_dict(new_cookies, cookiejar=None, overwrite=True)
         return cookies_CookieJar
 

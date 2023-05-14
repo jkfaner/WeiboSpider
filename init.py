@@ -9,42 +9,33 @@
 @File:init.py
 @Desc:项目初始化
 """
-from config.load import load_mysqlInfo, load_redis, load_loginInfo, load_downloadInfo, load_spiderInfo
 from database.mysqlDB import MySQlPool
 from database.redisDB import RedisPool
 
 from utils.logger import logger
+from utils.tool import load_json
 
 logger.info("程序正在初始化...")
-mysql_config = load_mysqlInfo()
-logger.info("[mysql数据库配置]:加载成功...")
-redis_config = load_redis()
-logger.info("[redis数据库配置]:加载成功...")
-login_config = load_loginInfo()
-logger.info("[微博账户配置]:加载成功...")
-download_config = load_downloadInfo()
-logger.info("[下载配置]:加载成功...")
-spider_config = load_spiderInfo()
-logger.info("[爬虫配置]:加载成功...")
+SystemInfo = load_json("./src/resource/system-info.json")
+SystemDB = load_json("./src/resource/system-db.json")
+SystemSQL = load_json("./src/resource/system-sql.json")
+SpiderSetting = load_json("./src/resource/spider-setting.json")
 
+_mysql = SystemDB.get("mysql")
 mysqlPool = MySQlPool(
-    host=mysql_config.host,
-    port=mysql_config.port,
-    user=mysql_config.user,
-    password=mysql_config.password,
-    database=mysql_config.database
+    host=_mysql.get("host"),
+    port=_mysql.get("port"),
+    user=_mysql.get("user"),
+    password=_mysql.get("password"),
+    database=_mysql.get("database")
 )
-logger.info("[mysql数据库连接池]:初始化成功->>> {} -> {}".format(
-    mysql_config.host, mysql_config.database
-))
+logger.info("[mysql数据库连接池]:初始化成功->>> {} -> {}".format(_mysql.get("host"), _mysql.get("database")))
 
-redisPoolObj = RedisPool(
-    host=redis_config.host,
-    port=redis_config.port,
-    password=redis_config.password,
-    db=redis_config.db
-)
-redisPool = redisPoolObj.redis
-logger.info("[redis数据库连接池]:初始化成功->>> {} -> {}".format(
-    redis_config.host, redis_config.db
-))
+_redis = SystemDB.get("redis")
+redisPool = RedisPool(
+    host=_redis.get("host"),
+    port=_redis.get("port"),
+    password=_redis.get("password"),
+    db=_redis.get("db"),
+).redis
+logger.info("[redis数据库连接池]:初始化成功->>> {} -> {}".format(_redis.get("host"), _redis.get("db")))
