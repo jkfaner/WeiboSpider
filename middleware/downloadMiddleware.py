@@ -143,16 +143,15 @@ class DownloadMiddleware(DownloadLoader):
         self.mysql_client.insert(sql=sql, param=[uid, screen_name, screen_name])
         self.mysql_client.end()
 
-    def update_folder(self, download_data: DownloadEntity) -> tuple:
+    def update_folder(self, uid: str, screen_name: str, folder_name: str, filename: str) -> tuple:
         """
         更新文件夹
-        :param download_data:
+        :param uid:
+        :param filename:
+        :param folder_name:
+        :param screen_name:
         :return:
         """
-        uid = download_data.blog.id
-        screen_name = download_data.blog.screen_name
-        folder_name = download_data.folder_name
-
         result = self.select_weibo_user(uid=uid)
         if not result:
             # 创建文件夹
@@ -184,7 +183,7 @@ class DownloadMiddleware(DownloadLoader):
             # 更新数据
             self.update_weibo_user(uid=uid, screen_name=screen_name)
 
-        filepath = os.path.join(path, download_data.filename)
+        filepath = os.path.join(path, filename)
         return path, filepath
 
     def finish_download(self, blog_id, url, filepath):

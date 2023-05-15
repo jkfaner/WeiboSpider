@@ -75,8 +75,8 @@
           "update_cookies": "UPDATE spider_login SET cookies= %s WHERE uid=%s"
         },
         "spider": {
-          "select_weibo_user": "SELECT weibo_id,screen_name FROM weibo_user WHERE weibo_id=%s",
-          "update_weibo_user": "INSERT INTO weibo_user (weibo_id,screen_name) VALUES (%s,%s)  ON DUPLICATE KEY UPDATE screen_name=%s"
+          "select_weibo_user": "SELECT uid,screen_name FROM spider_user WHERE uid=%s",
+          "update_weibo_user": "INSERT INTO spider_user (uid,screen_name) VALUES (%s,%s)  ON DUPLICATE KEY UPDATE screen_name=%s"
         }
       }
     },

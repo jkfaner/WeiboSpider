@@ -14,6 +14,7 @@ from typing import List
 
 from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
+from entity.weiboTypeEntity import WeiboTypeEntity
 from parse import WeiboParse
 from request.download import Download
 from request.fetch import Session
@@ -38,17 +39,19 @@ class InitMain(WeiboParse, Session):
         self.download.startDownload(download_datas)
 
 
-class BaseFollowObject(InitMain):
+class BaseSpider(InitMain):
 
-    def spider(self):
+    def spider_iter(self, *args, **kwargs):
         yield []
 
+    def run(self, *args, **kwargs):
+        pass
 
-class SpiderDefaultFollow(BaseFollowObject):
+
+class SpiderDefaultFollow(BaseSpider):
     """默认爬虫规则"""
 
-    def spider(self):
-        print("默认爬虫规则")
+    def spider_iter(self, *args, **kwargs):
         # 获取uid
         login = Login()
         cookies_item = login.select_cookies()
@@ -62,39 +65,32 @@ class SpiderDefaultFollow(BaseFollowObject):
             yield self.extractor_user(item)
 
 
-class SpiderNewFollow(BaseFollowObject):
+class SpiderNewFollow(BaseSpider):
     """爬取关注->最新关注顺序"""
 
-    def spider(self):
+    def spider_iter(self, *args, **kwargs):
         print("爬取关注->最新关注顺序")
         for item in self.requestIter.getUserFollowByNewFollowIter():
             yield self.extractor_user(item)
 
 
-class SpiderNewPublishFollow(BaseFollowObject):
+class SpiderNewPublishFollow(BaseSpider):
     """爬取关注->最新有发布的用户顺序"""
 
-    def spider(self):
+    def spider_iter(self, *args, **kwargs):
         print("爬取关注->最新有发布的用户顺序")
         for item in self.requestIter.getUserFollowByNewPublicIter():
             yield self.extractor_user(item)
 
 
-#############
-class BaseSpiderObject(BaseFollowObject):
-
-    def run(self, action):
-        pass
-
-
-class SpiderFollow(BaseSpiderObject):
+class SpiderFollow(BaseSpider):
     """爬取关注"""
 
-    def __init__(self, follow: BaseFollowObject):
+    def __init__(self, obj: BaseSpider):
         super(SpiderFollow, self).__init__()
-        self.follow = follow
+        self.obj = obj
 
-    def get_blog(self, users: List[UserEntity]):
+    def get_blog_iter(self, users: List[UserEntity]) -> List[WeiboTypeEntity]:
         """
         获取博客
         :param users:
@@ -113,26 +109,27 @@ class SpiderFollow(BaseSpiderObject):
                         yield blogs, user
                     time.sleep(2)
 
-    def run(self, action):
-        for users in self.follow.spider():
-            for blogs, user in self.get_blog(users=users):
+    def run(self, *args, **kwargs):
+        print("SpiderFollow->{}".format(*args, **kwargs))
+        for users in self.obj.spider_iter():
+            for blogs, user in self.get_blog_iter(users=users):
                 self.start_download(blogs=blogs, user=user)
 
 
-class SpiderRefresh(BaseSpiderObject):
+class SpiderRefresh(BaseSpider):
     """刷微博"""
 
-    def run(self, action):
-        print("SpiderRefresh->{}".format(action))
+    def run(self, *args, **kwargs):
+        print("SpiderRefresh->{}".format(*args, **kwargs))
 
 
 class Spider(object):
 
-    def __init__(self, action: BaseSpiderObject):
-        self.action = action
+    def __init__(self, obj: BaseSpider):
+        self.obj = obj
 
-    def do(self, action):
-        self.action.run(action)
+    def run(self, *args, **kwargs):
+        self.obj.run(*args, **kwargs)
 
 
 if __name__ == '__main__':
@@ -143,4 +140,4 @@ if __name__ == '__main__':
     strategy[4] = Spider(SpiderRefresh())
     mode = input("1-4:")
     csuper = strategy[int(mode)]
-    csuper.do("money")
+    csuper.run("money")

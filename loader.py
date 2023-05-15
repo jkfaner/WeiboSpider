@@ -47,7 +47,7 @@ class ProjectLoader(object):
                 password=client.get("password"),
                 database=client.get("database")
             )
-            logger.info("[mysql数据库连接池]:初始化成功->>> {} -> {}".format(client.get("host"), client.get("_database_config")))
+            logger.info("[mysql数据库连接池]:初始化成功->>> {} -> {}".format(client.get("host"), client.get("database")))
         return cls._mysqlClient
 
     @classmethod

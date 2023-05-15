@@ -22,7 +22,8 @@ from utils.logger import logger
 
 class ExtractorUserInfo(ExtractorApi):
 
-    def __extractor_userInfo(self, user: dict or list) -> UserEntity:
+    @staticmethod
+    def __extractor_userInfo(user: dict or list) -> UserEntity:
         """
         获取博主信息
         :param user:
@@ -84,8 +85,11 @@ class ExtractorWeibo(ExtractorUserInfo):
         # 图片 pic_infos
         pic_ids = self.find_first_data(item, "pic_ids")
         pic_infos = self.find_first_data(item, "pic_infos")
-        for index, id in enumerate(pic_ids, 1):
-            pic = pic_infos.get(id)
+        for index, _id in enumerate(pic_ids, 1):
+            try:
+                pic = pic_infos.get(_id)
+            except AttributeError:
+                print(item)
             if not pic:
                 continue
             # 图片尺寸大小：large>mw2000>orj1080>orj960>wap360>wap180

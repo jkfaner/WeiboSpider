@@ -29,10 +29,12 @@ CREATE TABLE `spider_login` (
 -- ----------------------------
 -- Table structure for weibo_user
 -- ----------------------------
-DROP TABLE IF EXISTS `weibo_user`;
-CREATE TABLE `weibo_user` (
-  `weibo_id` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `screen_name` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL
+DROP TABLE IF EXISTS `spider_user`;
+CREATE TABLE `spider_user` (
+  `id` bigint NOT NULL,
+  `uid` bigint NOT NULL,
+  `screen_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_screen_name` (`screen_name`,`uid`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 SET FOREIGN_KEY_CHECKS = 1;
