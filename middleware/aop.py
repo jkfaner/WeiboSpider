@@ -10,12 +10,13 @@
 @Desc:
 """
 import functools
+import logging
 from typing import List
-
+from collections.abc import Iterator
 import utils.constants as constants
 from entity.downloadEntity import DownloadEntity
 from loader import ProjectLoader
-from utils.logger import logger
+from utils.logger import logger, Logger
 
 filter_config = ProjectLoader.getSpiderConfig().get("filter")
 FILTER_USER = filter_config.get("filter-user")
@@ -154,7 +155,25 @@ class FilterAOP:
         return new_func
 
 
-class LoggerAOP:
+class LoggerAOP(Logger):
+
+    def __call__(self, func):
+        def wrapper(*args, **kwargs):
+            if self.level == logging.INFO:
+                self.logger.info(self.message)
+            elif self.level == logging.DEBUG:
+                self.logger.debug(self.message)
+            elif self.level == logging.WARNING:
+                self.logger.warning(self.message)
+            elif self.level == logging.ERROR:
+                self.logger.error(self.message)
+            elif self.level == logging.CRITICAL:
+                self.logger.critical(self.message)
+            else:
+                raise "日志类型设置错误"
+            return func(*args, **kwargs)
+
+        return wrapper
 
     def extractor_user_log(func):
         @functools.wraps(func)

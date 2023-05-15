@@ -15,6 +15,7 @@ from typing import List
 from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
 from entity.weiboTypeEntity import WeiboTypeEntity
+from middleware.aop import LoggerAOP
 from parse import WeiboParse
 from request.download import Download
 from request.fetch import Session
@@ -49,8 +50,9 @@ class BaseSpider(InitMain):
 
 
 class SpiderDefaultFollow(BaseSpider):
-    """默认爬虫规则"""
+    """爬取关注->默认爬虫规则"""
 
+    @LoggerAOP(message="爬取关注->默认爬虫规则")
     def spider_iter(self, *args, **kwargs):
         # 获取uid
         login = Login()
@@ -68,8 +70,8 @@ class SpiderDefaultFollow(BaseSpider):
 class SpiderNewFollow(BaseSpider):
     """爬取关注->最新关注顺序"""
 
+    @LoggerAOP(message="爬取关注->最新关注顺序")
     def spider_iter(self, *args, **kwargs):
-        print("爬取关注->最新关注顺序")
         for item in self.requestIter.getUserFollowByNewFollowIter():
             yield self.extractor_user(item)
 
@@ -77,8 +79,8 @@ class SpiderNewFollow(BaseSpider):
 class SpiderNewPublishFollow(BaseSpider):
     """爬取关注->最新有发布的用户顺序"""
 
+    @LoggerAOP(message="爬取关注->最新有发布的用户顺序")
     def spider_iter(self, *args, **kwargs):
-        print("爬取关注->最新有发布的用户顺序")
         for item in self.requestIter.getUserFollowByNewPublicIter():
             yield self.extractor_user(item)
 
@@ -90,6 +92,7 @@ class SpiderFollow(BaseSpider):
         super(SpiderFollow, self).__init__()
         self.obj = obj
 
+    @LoggerAOP(message="获取博客信息")
     def get_blog_iter(self, users: List[UserEntity]) -> List[WeiboTypeEntity]:
         """
         获取博客
@@ -109,8 +112,8 @@ class SpiderFollow(BaseSpider):
                         yield blogs, user
                     time.sleep(2)
 
+    @LoggerAOP(message="执行入口->爬取关注")
     def run(self, *args, **kwargs):
-        print("SpiderFollow->{}".format(*args, **kwargs))
         for users in self.obj.spider_iter():
             for blogs, user in self.get_blog_iter(users=users):
                 self.start_download(blogs=blogs, user=user)
@@ -119,8 +122,9 @@ class SpiderFollow(BaseSpider):
 class SpiderRefresh(BaseSpider):
     """刷微博"""
 
+    @LoggerAOP(message="执行入口->刷微博")
     def run(self, *args, **kwargs):
-        print("SpiderRefresh->{}".format(*args, **kwargs))
+        pass
 
 
 class Spider(object):
@@ -130,14 +134,3 @@ class Spider(object):
 
     def run(self, *args, **kwargs):
         self.obj.run(*args, **kwargs)
-
-
-if __name__ == '__main__':
-    strategy = {}
-    strategy[1] = Spider(SpiderFollow(SpiderDefaultFollow()))
-    strategy[2] = Spider(SpiderFollow(SpiderNewFollow()))
-    strategy[3] = Spider(SpiderFollow(SpiderNewPublishFollow()))
-    strategy[4] = Spider(SpiderRefresh())
-    mode = input("1-4:")
-    csuper = strategy[int(mode)]
-    csuper.run("money")

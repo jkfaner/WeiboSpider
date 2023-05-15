@@ -49,8 +49,8 @@ class ExtractorUserInfo(ExtractorApi):
         user = self.find_first_data(resp, 'user')
         user = user if user else self.find_first_data(resp, 'users')
         if isinstance(user, list):
-            for __user in user:
-                user_info_list.append(self.__extractor_userInfo(__user))
+            for _user in user:
+                user_info_list.append(self.__extractor_userInfo(_user))
         elif isinstance(user, dict):
             user_info_list.append(self.__extractor_userInfo(user))
         return user_info_list
@@ -64,14 +64,10 @@ class ExtractorWeibo(ExtractorUserInfo):
         :param resp:
         :return:
         """
-        queue = list()
-        statuses = self.find_first_data(resp=resp, target="statuses")
-        for item in statuses:
-            queue.append(self.__clean_info(item))
-        lists = self.find_first_data(resp=resp, target="list")
-        for item in lists:
-            queue.append(self.__clean_info(item))
-        return queue
+        statuses_blogs = [self.__clean_info(item) for item in self.find_first_data(resp=resp, target="statuses")]
+        list_blogs = [self.__clean_info(item) for item in self.find_first_data(resp=resp, target="list")]
+        statuses_blogs.extend(list_blogs)
+        return statuses_blogs
 
     def __extractor_picture(self, item) -> tuple:
         """
@@ -89,7 +85,7 @@ class ExtractorWeibo(ExtractorUserInfo):
             try:
                 pic = pic_infos.get(_id)
             except AttributeError:
-                print(item)
+                continue
             if not pic:
                 continue
             # 图片尺寸大小：large>mw2000>orj1080>orj960>wap360>wap180
@@ -138,7 +134,6 @@ class ExtractorWeibo(ExtractorUserInfo):
                 targ = key.split("__")[-1]
                 setattr(playInfoObj, targ, play_info.get(targ))
             videos.append(playInfoObj)
-
         return videos
 
     def __extractor_info(self, item: dict, is_original: bool) -> WeiboEntity:

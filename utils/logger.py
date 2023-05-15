@@ -15,28 +15,31 @@ import os
 import sys
 from datetime import datetime
 
-DEFAULT_LOG_LEVEL = logging.INFO  # 默认等级
-DEFAULT_LOG_FMT = '%(asctime)s %(filename)s [line:%(lineno)d] %(levelname)s: %(message)s'  # 默认日志格式
-DEFAULT_LOG_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'  # 默认时间格式
-DEFAULT_LOG_PATH = 'log'
-
-now = datetime.now().strftime(DEFAULT_LOG_DATETIME_FORMAT)
-DEFAULT_LOG_FILENAME = os.path.join(DEFAULT_LOG_PATH, f'log_{now}.log')  # 默认日志文件名称
-if not os.path.exists(DEFAULT_LOG_PATH):
-    os.makedirs(DEFAULT_LOG_PATH)
-
 
 class Logger:
-    def __init__(self):
+    default_log_fmt = '%(asctime)s %(filename)s [line:%(lineno)d] %(levelname)s: %(message)s'  # 默认日志格式
+    default_log_datetime_format = '%Y-%m-%d %H:%M:%S'  # 默认时间格式
+    default_log_path = 'log'
+
+    def __init__(self, message: str = "", level: logging = logging.INFO, save: bool = True):
+        self.message = message
+        self.level = level
         self._logger = logging.getLogger()
         if not self._logger.handlers:
-            self.formatter = logging.Formatter(fmt=DEFAULT_LOG_FMT, datefmt=DEFAULT_LOG_DATETIME_FORMAT)
+            self.formatter = logging.Formatter(fmt=self.default_log_fmt, datefmt=self.default_log_datetime_format)
             # 设置终端日志模式
             self._logger.addHandler(self._get_console_handler())
-            # 设置文件日志模式
-            # self._logger.addHandler(self._get_file_handler(DEFAULT_LOG_FILENAME))
+            if save:
+                if not os.path.exists(self.default_log_path):
+                    os.makedirs(self.default_log_path)
+                # 设置文件日志模式
+                self._logger.addHandler(self._get_file_handler(self._get_filepath()))
             # 设置日志等级
-            self._logger.setLevel(DEFAULT_LOG_LEVEL)
+            self._logger.setLevel(level)
+
+    def _get_filepath(self):
+        now = datetime.now().strftime(self.default_log_datetime_format)
+        return os.path.join(self.default_log_path, f'log_{now}.log')  # 默认日志文件名称
 
     def _get_file_handler(self, filename):
         """返回一个文件日志handler"""
@@ -55,4 +58,4 @@ class Logger:
         return self._logger
 
 
-logger = Logger().logger
+logger = Logger(level=logging.INFO, save=True).logger
