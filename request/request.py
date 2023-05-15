@@ -9,7 +9,7 @@
 @File:request.py
 @Desc:Request请求
 """
-from init import SystemInfo
+from loader import ProjectLoader
 from middleware.sessionMiddleware import SessionMiddleware
 from utils.tool import join_url
 
@@ -17,7 +17,7 @@ from utils.tool import join_url
 class Request(SessionMiddleware):
 
     def __init__(self):
-        self.spiderAPI = SystemInfo.get("Spider-API")
+        self.spiderAPI = ProjectLoader.getSystemConfig().get("api")
         super(Request, self).__init__()
 
     def getUserFollow(self, uid: str, page: int):

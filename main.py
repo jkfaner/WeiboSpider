@@ -14,7 +14,7 @@ from typing import List
 
 from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
-from middleware.parse import Parse
+from parse import WeiboParse
 from request.download import Download
 from request.fetch import Session
 from request.login import Login
@@ -22,7 +22,7 @@ from request.requestIter import RequestIter
 from utils.exception import DateError
 
 
-class InitMain(Parse, Session):
+class InitMain(WeiboParse, Session):
     requestIter = RequestIter()
     download = Download()
 

@@ -12,22 +12,22 @@
 import functools
 from typing import List
 
-import utils.businessConstants as constants
-from init import SpiderSetting
+import utils.constants as constants
+from loader import ProjectLoader
 from utils.logger import logger
 
-_filter = SpiderSetting.get("spider-list")
-FILTER_USER = _filter.get("filter-user")
-FILTER_BLOG = _filter.get("filter-blog")
+filter_config = ProjectLoader.getSpiderConfig().get("filter")
+FILTER_USER = filter_config.get("filter-user")
+FILTER_BLOG = filter_config.get("filter-blog")
 
 
 def parse_user(users: List) -> List:
     return [user.split("/")[-1] for user in users]
 
 
-original_users = parse_user(_filter.get("original"))
-forward_users = parse_user(_filter.get("forward"))
-FILTER_TYPE = _filter.get("filter-type")
+original_users = parse_user(filter_config.get("original"))
+forward_users = parse_user(filter_config.get("forward"))
+FILTER_TYPE = filter_config.get("filter-type")
 if FILTER_TYPE == "original":
     USERS_LIST = list(set(original_users))
 elif FILTER_TYPE == "forward":
@@ -59,6 +59,7 @@ class FilterAOP:
         原创 or 转发 or 原创+转发
         :return:
         """
+
         @functools.wraps(func)
         def new_func(self, *args, **kwargs):
             blogs = func(self, *args, **kwargs)
@@ -93,6 +94,7 @@ class FilterAOP:
 
     def filter_blog_by_date(func):
         """通过设置的日期筛选博客"""
+
         @functools.wraps(func)
         def new_func(self, *args, **kwargs):
             blogs = func(self, *args, **kwargs)
@@ -113,10 +115,12 @@ class FilterAOP:
             #     msg = f"[{index}/{len_blogs}]通过日期[{user_crawl.date}]筛选博客:{user_msg} -->> {blog_msg}"
             #     logger.info(msg)
             return blogs
+
         return new_func
 
     def filter_download(func):
         """下载筛选->通过已下载和404筛选"""
+
         @functools.wraps(func)
         def new_func(self, *args, **kwargs):
             download_datas = func(self, *args, **kwargs)
@@ -143,6 +147,7 @@ class LoggerAOP:
             for index, user in enumerate(users, 1):
                 logger.info(f"[{index}/{len(users)}]提取用户:{user.idstr}->{user.screen_name}")
             return users
+
         return new_func
 
     def extractor_blog_log(func):

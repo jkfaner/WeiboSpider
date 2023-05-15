@@ -6,7 +6,7 @@
 @Ide:PyCharm
 @Time:2022/1/23 19:02
 @Project:WeiboSpider
-@File:weiboJsonExtractor.py
+@File:weiboExtractor.py
 @Desc:微博json数据解析
 """
 from typing import List
@@ -15,10 +15,9 @@ from entity.playInfoEntity import PlayInfoEntity
 from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
 from entity.weiboTypeEntity import WeiboTypeEntity
-from extractor.jsonExtractorAPI import ExtractorApi
-import utils.businessConstants as constants
+import utils.constants as constants
+from extractor.extractor import ExtractorApi
 from utils.logger import logger
-from utils.queue import Queue
 
 
 class ExtractorUserInfo(ExtractorApi):
@@ -41,19 +40,19 @@ class ExtractorUserInfo(ExtractorApi):
         :param resp:
         :return:
         """
-        queue = Queue()
+        user_info_list = list()
         if not resp:
             # 提高效率 无数据 直接返回
-            queue.enqueue(UserEntity())
-            return queue.get_all()
+            user_info_list.append(UserEntity())
+            return user_info_list
         user = self.find_first_data(resp, 'user')
         user = user if user else self.find_first_data(resp, 'users')
         if isinstance(user, list):
             for __user in user:
-                queue.enqueue(self.__extractor_userInfo(__user))
+                user_info_list.append(self.__extractor_userInfo(__user))
         elif isinstance(user, dict):
-            queue.enqueue(self.__extractor_userInfo(user))
-        return queue.get_all()
+            user_info_list.append(self.__extractor_userInfo(user))
+        return user_info_list
 
 
 class ExtractorWeibo(ExtractorUserInfo):
@@ -64,14 +63,14 @@ class ExtractorWeibo(ExtractorUserInfo):
         :param resp:
         :return:
         """
-        queue = Queue()
+        queue = list()
         statuses = self.find_first_data(resp=resp, target="statuses")
         for item in statuses:
-            queue.enqueue(self.__clean_info(item))
+            queue.append(self.__clean_info(item))
         lists = self.find_first_data(resp=resp, target="list")
         for item in lists:
-            queue.enqueue(self.__clean_info(item))
-        return queue.get_all()
+            queue.append(self.__clean_info(item))
+        return queue
 
     def __extractor_picture(self, item) -> tuple:
         """

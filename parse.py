@@ -13,11 +13,11 @@ from typing import List
 
 from entity.userEntity import UserEntity
 from entity.weiboTypeEntity import WeiboTypeEntity
-from extractor.weiboJsonExtractor import ExtractorWeibo
+from extractor.weiboExtractor import ExtractorWeibo
 from middleware.aop import FilterAOP, LoggerAOP
 
 
-class Parse(object):
+class WeiboParse(object):
     """解析"""
     extractorWeibo = ExtractorWeibo()
 

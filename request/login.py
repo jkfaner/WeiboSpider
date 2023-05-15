@@ -16,13 +16,22 @@ from DecryptLogin.core import weibo
 from requests import Session
 from requests.cookies import RequestsCookieJar
 
-from init import SystemSQL, mysqlPool, SpiderSetting
+from loader import ProjectLoader
 from utils.logger import logger
 
 
-class Login(object):
-    __login_sql = SystemSQL.get("login")
-    __login_setting = SpiderSetting.get("login")
+class LoginLoader(object):
+    _sql_dict = ProjectLoader.getDatabaseConfig()["mysql"]["sql"]["login"]
+    _login_user = ProjectLoader.getSpiderConfig()["login"]
+    _mysql_client = ProjectLoader.getMysqlClient()
+
+    def __init__(self):
+        self.sql_dict = self._sql_dict
+        self.login_user = self._login_user
+        self.mysql_client = self._mysql_client
+
+
+class Login(LoginLoader):
 
     @staticmethod
     def login_by_account():
@@ -37,8 +46,8 @@ class Login(object):
         查询数据库cookies信息
         :return:
         """
-        sql = self.__login_sql.get("select_cookies")
-        select_result = mysqlPool.getOne(sql=sql, param=[self.__login_setting.get("uid")])
+        sql = self.sql_dict.get("select_cookies")
+        select_result = self.mysql_client.getOne(sql=sql, param=[self.login_user.get("uid")])
         if not select_result:
             return {}
         s_cookies = select_result.get("cookies").decode("utf-8")
@@ -52,9 +61,9 @@ class Login(object):
         :param cookies:
         :return:
         """
-        sql = self.__login_sql.get("insert_cookies")
-        mysqlPool.update(sql=sql, param=[uid, cookies])
-        mysqlPool.end()
+        sql = self.sql_dict.get("insert_cookies")
+        self.mysql_client.update(sql=sql, param=[uid, cookies])
+        self.mysql_client.end()
 
     def update_cookies(self, uid, cookies: str):
         """
@@ -63,9 +72,9 @@ class Login(object):
         :param cookies:
         :return:
         """
-        sql = self.__login_sql.get("update_cookies")
-        mysqlPool.update(sql=sql, param=[cookies, uid])
-        mysqlPool.end()
+        sql = self.sql_dict.get("update_cookies")
+        self.mysql_client.update(sql=sql, param=[cookies, uid])
+        self.mysql_client.end()
 
     @staticmethod
     def dict_from_cookiejar(login_session: Session) -> str:
@@ -86,19 +95,20 @@ class Login(object):
         :return:
         """
         new_cookies = json.loads(cookies)
-        cookies_CookieJar = requests.utils.cookiejar_from_dict(new_cookies, cookiejar=None, overwrite=True)
-        return cookies_CookieJar
+        return requests.utils.cookiejar_from_dict(new_cookies, cookiejar=None, overwrite=True)
 
-    def set_cookies(self, session: Session, cookiejar: RequestsCookieJar):
+    @staticmethod
+    def set_cookies(session: Session, cookiejar: RequestsCookieJar):
         """
         在session中设置cookies
+        :param cookiejar:
         :param session:
-        :param cookies:
         :return:
         """
         session.cookies = cookiejar
 
-    def is_login(self, fetch):
+    @staticmethod
+    def is_login(fetch):
         """
         检查cookie是否失效
         :param fetch:
@@ -114,6 +124,7 @@ class Login(object):
     def login_online(self, session: Session, insert: bool):
         """
         登录
+        :param session:
         :param insert: 插入数据：True，更新数据：False
         :return:
         """

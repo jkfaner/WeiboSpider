@@ -15,18 +15,34 @@ from typing import List
 from entity.downloadEntity import DownloadEntity
 from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
-from init import redisPool, mysqlPool, SpiderSetting, SystemSQL
+from loader import ProjectLoader
 from middleware.aop import FilterAOP
 from utils.logger import logger
 from utils.tool import getRedisKey, time_formatting
-import utils.businessConstants as constants
+import utils.constants as constants
 
 
-class DownloadMiddleware(object):
+class DownloadLoader(object):
+    _spider_config = ProjectLoader.getSpiderConfig()
+    _database_config = ProjectLoader.getDatabaseConfig()
+    _mysql_client = ProjectLoader.getMysqlClient()
+    _redis_client = ProjectLoader.getRedisClient()
 
     def __init__(self):
+        self.root_path = self._spider_config["download"]["root"]
+        self.spider_sql_dict = self._database_config["mysql"]["sql"]["spider"]
+        self.mysql_client = self._mysql_client
+        self.redis_client = self._redis_client
+        self.thread = self._spider_config["download"]["thread"]
+        self.workers = self._spider_config["download"]["workers"]
+
+
+class DownloadMiddleware(DownloadLoader):
+
+    def __init__(self):
+        super(DownloadMiddleware, self).__init__()
         # 创建weibo专属路径
-        self.rootPath = os.path.join(SpiderSetting.get("download").get("root"), "weibo")
+        self.rootPath = os.path.join(self.root_path, "weibo")
         if not os.path.exists(self.rootPath):
             os.makedirs(self.rootPath)
 
@@ -106,28 +122,26 @@ class DownloadMiddleware(object):
 
         return new_blogs
 
-    @staticmethod
-    def select_weibo_user(uid: str):
+    def select_weibo_user(self, uid: str):
         """
         查询数据库微博用户
         :param uid:
         :return:
         """
-        sql = SystemSQL.get("spider").get("select_weibo_user")
-        result = mysqlPool.getOne(sql=sql, param=[uid])
+        sql = self.spider_sql_dict.get("select_weibo_user")
+        result = self.mysql_client.getOne(sql=sql, param=[uid])
         return result
 
-    @staticmethod
-    def update_weibo_user(uid: str, screen_name: str):
+    def update_weibo_user(self, uid: str, screen_name: str):
         """
         插入数据&更新数据 数据库有数据就写入 没数据就跟行 weibo_id为唯一索引
         :param uid:
         :param screen_name:
         :return:
         """
-        sql = SystemSQL.get("spider").get("update_weibo_user")
-        mysqlPool.insert(sql=sql, param=[uid, screen_name, screen_name])
-        mysqlPool.end()
+        sql = self.spider_sql_dict.get("update_weibo_user")
+        self.mysql_client.insert(sql=sql, param=[uid, screen_name, screen_name])
+        self.mysql_client.end()
 
     def update_folder(self, download_data: DownloadEntity) -> tuple:
         """
@@ -173,8 +187,7 @@ class DownloadMiddleware(object):
         filepath = os.path.join(path, download_data.filename)
         return path, filepath
 
-    @staticmethod
-    def finish_download(blog_id, url, filepath):
+    def finish_download(self, blog_id, url, filepath):
         """
         是否已经下载
         包含下载完成的以及404错误
@@ -188,8 +201,8 @@ class DownloadMiddleware(object):
         key = getRedisKey(blog_id=blog_id, url=url, filepath=filepath)
         # 检查文件是否存在 存在分为两种情况：完整数据文件 非完整数据文件（该类数据会继续下载）
         file_in_path = os.path.exists(filepath)
-        finished = redisPool.hexists(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=key)
-        error_404 = redisPool.hexists(name=constants.REDIS_DOWNLOAD_FAIL_NAME, key=key)
+        finished = self.redis_client.hexists(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=key)
+        error_404 = self.redis_client.hexists(name=constants.REDIS_DOWNLOAD_FAIL_NAME, key=key)
         if error_404:
             return True
         if not file_in_path:

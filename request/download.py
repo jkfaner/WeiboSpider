@@ -15,9 +15,8 @@ from typing import List
 import requests
 from tqdm import tqdm
 
-import utils.businessConstants as constants
+import utils.constants as constants
 from entity.downloadEntity import DownloadEntity
-from init import redisPool, SpiderSetting
 from middleware.downloadMiddleware import DownloadMiddleware
 from utils.exception import NOTContentLengthError, FinishedError, NotFound
 from utils.logger import logger
@@ -25,8 +24,6 @@ from utils.tool import getRedisKey, thread_pool, EntityToJson
 
 
 class Download(DownloadMiddleware):
-    __thread = SpiderSetting.get("download").get("thread")
-    __workers = SpiderSetting.get("download").get("workers")
 
     @staticmethod
     def __get_file_size(url, filepath) -> tuple:
@@ -94,24 +91,24 @@ class Download(DownloadMiddleware):
         except FinishedError:
             # 再次写入数据库 防止下载完成后没有及时写入数据库
             logger.warning("已经下载完成，但是上次没有写入redis，本次写入：key:{}".format(redis_key))
-            redisPool.hset(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=redis_key, value=redis_value)
+            self.redis_client.hset(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=redis_key, value=redis_value)
             return
         except NotFound:
             logger.error("请求链接404错误：{}".format(item.url))
-            redisPool.hset(name=constants.REDIS_DOWNLOAD_FAIL_NAME, key=redis_key, value=redis_value)
+            self.redis_client.hset(name=constants.REDIS_DOWNLOAD_FAIL_NAME, key=redis_key, value=redis_value)
             return
         except Exception as e:
             logger.error("请求错误：{}".format(e))
             return
 
         # 开启线程下载就没有详情精度条提示 只有完成精度条提示
-        if self.__thread:
+        if self.thread:
             self.__segmented_download(item, first_byte, file_size, False)
         else:
             self.__segmented_download(item, first_byte, file_size, True)
 
         # 下载完成就写入数据库
-        redisPool.hset(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=redis_key, value=redis_value)
+        self.redis_client.hset(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=redis_key, value=redis_value)
 
     def startDownload(self, download_list: List[DownloadEntity]):
         """
@@ -121,11 +118,11 @@ class Download(DownloadMiddleware):
         """
         if not download_list:
             return
-        if self.__thread:
+        if self.thread:
             thread_pool(
                 method=self.__download,
                 data=download_list,
-                thread_num=min(len(download_list), self.__workers),
+                thread_num=min(len(download_list), self.workers),
             )
         else:
             for _ in download_list:

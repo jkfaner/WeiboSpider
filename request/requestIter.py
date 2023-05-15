@@ -9,8 +9,8 @@
 @File:requestIter.py
 @Desc:
 """
-from extractor.jsonExtractorAPI import ExtractorApi
 from request.request import Request
+from extractor.extractor import ExtractorApi
 
 
 class RequestIter(Request):

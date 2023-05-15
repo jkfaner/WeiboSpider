@@ -19,7 +19,8 @@ from concurrent import futures
 from urllib.parse import urlencode
 from tqdm import tqdm
 
-def load_json(path: str)->dict:
+
+def load_json(path: str) -> dict:
     filepath, filename = os.path.split(path)
     name, ext = os.path.splitext(filename)
     if ext != ".json":

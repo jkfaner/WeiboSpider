@@ -34,7 +34,7 @@ class Logger:
             # 设置终端日志模式
             self._logger.addHandler(self._get_console_handler())
             # 设置文件日志模式
-            self._logger.addHandler(self._get_file_handler(DEFAULT_LOG_FILENAME))
+            # self._logger.addHandler(self._get_file_handler(DEFAULT_LOG_FILENAME))
             # 设置日志等级
             self._logger.setLevel(DEFAULT_LOG_LEVEL)
 
