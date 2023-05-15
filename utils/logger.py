@@ -14,6 +14,7 @@ import logging
 import os
 import sys
 from datetime import datetime
+from typing import List
 
 
 class Logger:
@@ -21,8 +22,16 @@ class Logger:
     default_log_datetime_format = '%Y-%m-%d %H:%M:%S'  # 默认时间格式
     default_log_path = 'log'
 
-    def __init__(self, message: str = "", level: logging = logging.INFO, save: bool = True):
+    def __init__(self, message: str = "", index: int or List = -1, level: logging = logging.INFO, save: bool = False):
+        """
+        构造方法
+        :param message: 输出信息
+        :param index: 参数索引
+        :param level: 日志等级
+        :param save: 是否储存
+        """
         self.message = message
+        self.format_index = index
         self.level = level
         self._logger = logging.getLogger()
         if not self._logger.handlers:
@@ -58,4 +67,4 @@ class Logger:
         return self._logger
 
 
-logger = Logger(level=logging.INFO, save=True).logger
+logger = Logger(level=logging.INFO, save=False).logger

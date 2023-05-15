@@ -9,10 +9,19 @@
 @File:test.py
 @Desc:
 """
-import logging
-import os
 import sys
-from datetime import datetime
+from typing import List
 
 
+def format_str(message: str, index: int or List):
+    dict_count = message.count("{}")
+    index_len = index
+    if isinstance(index, list):
+        index_len = len(index)
+    if dict_count != index_len:
+        sys.exit("!!!")
+    return message.format(*index)
 
+
+if __name__ == '__main__':
+    format_str("{} + {} = {}", [1, 1, 4])

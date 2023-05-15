@@ -15,12 +15,12 @@ from typing import List
 from entity.userEntity import UserEntity
 from entity.weiboEntity import WeiboEntity
 from entity.weiboTypeEntity import WeiboTypeEntity
-from middleware.aop import LoggerAOP
+from aop import LoggerAOP, FilterAOP
 from parse import WeiboParse
 from request.download import Download
 from request.fetch import Session
 from request.login import Login
-from request.requestIter import RequestIter
+from request.request import RequestIter
 from utils.exception import DateError
 
 
@@ -28,7 +28,8 @@ class InitMain(WeiboParse, Session):
     requestIter = RequestIter()
     download = Download()
 
-    def start_download(self, blogs: List[WeiboEntity], user: UserEntity):
+    @FilterAOP.all_download
+    def start_download(self, blogs, user):
         """
         开始下载：
             数据筛选&下载
@@ -101,6 +102,9 @@ class SpiderFollow(BaseSpider):
         """
         for user in users:
             for blog in self.requestIter.getUserBlogIter(uid=user.idstr):
+                if blog == [user.idstr]:
+                    yield blog, user
+
                 blogs = None
                 try:
                     blogs = self.extractor_blog(response=blog, user=user)

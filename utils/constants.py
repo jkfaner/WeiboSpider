@@ -17,5 +17,10 @@ DOWNLOAD_PATH_VIDEO_FORWARD_STR = "video/转发微博视频"
 DOWNLOAD_PATH_IMG_ORIGINAL_STR = "img/原创微博图片"
 DOWNLOAD_PATH_VIDEO_ORIGINAL_STR = "video/原创微博视频"
 
-REDIS_DOWNLOAD_FINISH_NAME = "weibo:blog:finished"
-REDIS_DOWNLOAD_FAIL_NAME = "weibo:blog:404"
+REDIS_LOGIN_NAME = "weibo:login"  # 登录
+REDIS_SPIDER_USER_NAME = "weibo:spider:user"  # 博主
+REDIS_SPIDER_USER_START = "weibo:spider:start"  # 最新爬取时间
+REDIS_SPIDER_USER_FULL = "weibo:spider:full"  # 是否完整爬取
+
+REDIS_DOWNLOAD_FINISH_NAME = "weibo:blog:ok"
+REDIS_DOWNLOAD_FAIL_NAME = "weibo:blog:error"

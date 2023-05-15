@@ -11,12 +11,13 @@
 """
 import functools
 import logging
+import sys
 from typing import List
-from collections.abc import Iterator
 import utils.constants as constants
 from entity.downloadEntity import DownloadEntity
 from loader import ProjectLoader
 from utils.logger import logger, Logger
+from utils.tool import compare_date, get_time_now, time_formatting
 
 filter_config = ProjectLoader.getSpiderConfig().get("filter")
 FILTER_USER = filter_config.get("filter-user")
@@ -42,9 +43,8 @@ else:
 class FilterAOP:
 
     def filter_user(func):
-        @functools.wraps(func)
-        def new_func(self, *args, **kwargs):
-            userObjs = func(self, *args, **kwargs)
+
+        def after(userObjs):
             if not FILTER_USER:
                 return userObjs
             users = [userObj for userObj in userObjs if userObj.idstr in USERS_LIST]
@@ -53,18 +53,24 @@ class FilterAOP:
                 logger.info(user.screen_name)
             return users
 
+        @functools.wraps(func)
+        def new_func(self, *args, **kwargs):
+            userObjs = func(self, *args, **kwargs)
+            return after(userObjs)
+
         return new_func
 
     def filter_blog_by_type(func):
-        """
-        通过筛选条件筛选博客
-        原创 or 转发 or 原创+转发
-        :return:
-        """
 
-        @functools.wraps(func)
-        def new_func(self, *args, **kwargs):
-            blogs = func(self, *args, **kwargs)
+        def after(blogs, *args, **kwargs) -> List:
+            """
+            通过筛选条件筛选博客
+                原创 or 转发 or 原创+转发
+            :param blogs:
+            :param args:
+            :param kwargs:
+            :return:
+            """
             if not FILTER_BLOG:
                 return blogs
             new_blogs = list()
@@ -92,53 +98,55 @@ class FilterAOP:
                 logger.info(msg1 + msg2 + msg3)
             return new_blogs
 
+        @functools.wraps(func)
+        def new_func(self, *args, **kwargs):
+            blogs = func(self, *args, **kwargs)
+            return after(blogs=blogs, *args, **kwargs)
+
         return new_func
 
     def filter_blog_by_date(func):
         """通过设置的日期筛选博客"""
 
+        def filter_data(self, blog, entity, new_blogs):
+            spider_new_time = self.download.redis_client.hget(name=constants.REDIS_SPIDER_USER_START,key=entity.id)
+            full_uid_list = [i for i in self.download.redis_client.sscan_iter(name=constants.REDIS_SPIDER_USER_FULL)]
+            if str(entity.id) in full_uid_list:
+                if spider_new_time is None:
+                    new_blogs.append(blog)
+                    return
+                # 全量爬取,放行全量完成时间之后的数据,且排除置顶(置顶优先爬取,全量即爬)
+                if compare_date(stime=entity.created_at, etime=spider_new_time) and not entity.is_top:
+                    new_blogs.append(blog)
+                    return
+            else:
+                new_blogs.append(blog)
+
         @functools.wraps(func)
         def new_func(self, *args, **kwargs):
+            # 1.已经全量爬取 -> 记录当前时间 下次放行此时间之后的载数据
+            # 2.未全量爬取 -> 放行所以数据
+            # 注意置顶内容
             blogs = func(self, *args, **kwargs)
             new_blogs = list()
-            # for blog in blogs:
-            #     # 筛选爬取时间
-            #     if not blog.is_top and not match_date(create_time=blog.created_at, filter_date=user_crawl.date):
-            #         # 不符合时间&不是置顶数据 抛出异常 捕获异常后需要中断爬取
-            #         create_time = time_formatting(blog.created_at, usefilename=False, strftime=True)
-            #         logger.warning(f"[{user_crawl.date}]筛选的博客不在配置的下载时间之后:{create_time}")
-            #         raise DateError("筛选的博客不在配置的下载时间内", new_blogs)
-            #     else:
-            #         new_blogs.append(blog)
-            # en_blogs = len(new_blogs)
-            # for index, new_blog in enumerate(new_blogs, 1):
-            #     user_msg = f"{user.idstr}->{user.screen_name}"
-            #     blog_msg = f"{new_blog.blog_id}->{time_formatting(created_at=new_blog.created_at, usefilename=False, strftime=True)}"
-            #     msg = f"[{index}/{len_blogs}]通过日期[{user_crawl.date}]筛选博客:{user_msg} -->> {blog_msg}"
-            #     logger.info(msg)
-            return blogs
+            for blog in blogs:
+                forward = blog.forward
+                original = blog.original
+                if forward:
+                    filter_data(self, blog, forward, new_blogs)
+                if original:
+                    filter_data(self, blog, original, new_blogs)
+            return new_blogs
 
         return new_func
 
     def filter_download(func):
         """下载筛选->通过已下载和404筛选"""
 
-        def init_update_folder(download_datas: List[DownloadEntity]) -> list[DownloadEntity]:
-            # 遵循先后原则 重复后者覆盖前者 uid唯一不变
-            cache = set()
-            result = list()
-            for download_data in download_datas[::-1]:
-                uid = download_data.blog.id
-                if uid not in cache:
-                    cache.add(uid)
-                    result.append(download_data)
-            return result
-
-        @functools.wraps(func)
-        def new_func(self, *args, **kwargs):
-            download_datas = func(self, *args, **kwargs)
+        def after(self, download_datas):
             new_download_datas = list()
-            for download_data in init_update_folder(download_datas):
+
+            for download_data in download_datas:
                 uid = download_data.blog.id
                 screen_name = download_data.blog.screen_name
                 folder_name = download_data.folder_name
@@ -147,28 +155,67 @@ class FilterAOP:
                 # 是否已经下载 包含下载完成的以及404错误的以及该路径文件是否存在
                 # 注意：如果文件被删除且提示redis数库中已经存在 那么文件将继续下载！！！
                 # 注意：图片下载地址为静态地址 视频下载地址为动态地址！存在重复写入同文件数据！！！
-                if not self.finish_download(blog_id=download_data.blog_id, url=download_data.url, filepath=filepath):
+                if not self.finish_download(uid=download_data.blog_id, url=download_data.url, filepath=filepath):
                     download_data.filepath = filepath
                     new_download_datas.append(download_data)
             return new_download_datas
+
+        @functools.wraps(func)
+        def new_func(self, *args, **kwargs):
+            download_datas = func(self, *args, **kwargs)
+            return after(self, download_datas)
+
+        return new_func
+
+    def all_download(func):
+        """全量下载"""
+
+        @functools.wraps(func)
+        def new_func(self, *args, **kwargs):
+            blogs = kwargs['blogs']
+            user = kwargs['user']
+            if len(blogs) == 1 and blogs[0] == user.idstr:
+                # 当前博主已经完成全量爬取
+                self.download.redis_client.sadd(constants.REDIS_SPIDER_USER_FULL, user.idstr)
+                return
+            return func(self, *args, **kwargs)
 
         return new_func
 
 
 class LoggerAOP(Logger):
 
+    @staticmethod
+    def format_str(message: str, index: int or List, *args, **kwargs):
+        dict_count = message.count("{}")
+        index_len = index
+        if isinstance(index, list):
+            index_len = len(index)
+        if dict_count != index_len and index == -1:
+            sys.exit("ERROR: LoggerAOP.format_str")
+        if isinstance(index, int):
+            return message.format(args[index])
+        format_list = list()
+        if isinstance(index, list):
+            for i in index:
+                format_list.append(eval(i))
+        return message.format(*format_list)
+
     def __call__(self, func):
         def wrapper(*args, **kwargs):
+            message = self.message
+            if "{}" in message:
+                message = self.format_str(message, self.format_index, *args, **kwargs)
             if self.level == logging.INFO:
-                self.logger.info(self.message)
+                self.logger.info(message)
             elif self.level == logging.DEBUG:
-                self.logger.debug(self.message)
+                self.logger.debug(message)
             elif self.level == logging.WARNING:
-                self.logger.warning(self.message)
+                self.logger.warning(message)
             elif self.level == logging.ERROR:
-                self.logger.error(self.message)
+                self.logger.error(message)
             elif self.level == logging.CRITICAL:
-                self.logger.critical(self.message)
+                self.logger.critical(message)
             else:
                 raise "日志类型设置错误"
             return func(*args, **kwargs)

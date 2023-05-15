@@ -14,7 +14,7 @@ from typing import List
 from entity.userEntity import UserEntity
 from entity.weiboTypeEntity import WeiboTypeEntity
 from extractor.weiboExtractor import ExtractorWeibo
-from middleware.aop import FilterAOP, LoggerAOP
+from aop import FilterAOP, LoggerAOP
 
 
 class WeiboParse(object):
@@ -22,7 +22,7 @@ class WeiboParse(object):
     extractorWeibo = ExtractorWeibo()
 
     @FilterAOP.filter_user
-    @LoggerAOP.extractor_user_log
+    # @LoggerAOP.extractor_user_log
     def extractor_user(self, response, *args, **kwargs) -> List[UserEntity]:
         """
         提取用户

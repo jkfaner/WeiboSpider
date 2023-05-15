@@ -5,7 +5,7 @@
       "uid": "7367188627"
     },
     "download": {
-      "root": "/Users/llb/Library/Mobile Documents/com~apple~CloudDocs/图片",
+      "root": "/Users/llb/Library/Mobile Documents/com~apple~CloudDocs/spiderDemo",
       "thread": true,
       "workers": 8
     },
@@ -14,8 +14,10 @@
       "filter-blog": true,
       "filter-type": "original",
       "original": [
-        "https://weibo.com/u/5703433758",
-        "https://weibo.com/u/5620230193",
+        "https://weibo.com/u/7796248561"
+      ],
+      "forward": [],
+      "backups": [
         "https://weibo.com/u/3700763437",
         "https://weibo.com/u/3887046428",
         "https://weibo.com/u/7772277118",
@@ -23,6 +25,7 @@
         "https://weibo.com/u/7680590708",
         "https://weibo.com/u/6091593545",
         "https://weibo.com/u/7796248561",
+        "https://weibo.com/u/5703433758",
         "https://weibo.com/u/7728580677",
         "https://weibo.com/u/7628044408",
         "https://weibo.com/u/6627371236",
@@ -30,10 +33,11 @@
         "https://weibo.com/u/6229606632",
         "https://weibo.com/u/6728017004",
         "https://weibo.com/u/6728017004",
-        "https://weibo.com/u/7476335465"
-      ],
-      "forward": [],
-      "backups": [
+        "https://weibo.com/u/7476335465",
+
+
+
+
         "https://weibo.com/u/7628044408",
         "https://weibo.com/u/7225091153",
         "https://weibo.com/u/1942690145",

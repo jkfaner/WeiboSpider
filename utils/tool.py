@@ -100,24 +100,47 @@ def match_date(create_time: str, filter_date: str) -> bool:
     :param filter_date:约定的时间
     :return:
     """
+
     created_at = datetime.datetime.strptime(time_formatting(create_time, usefilename=False), '%Y-%m-%d').date()
     setting_created_at = datetime.datetime.strptime(filter_date, '%Y-%m-%d').date()
-    if created_at >= setting_created_at:
+    if created_at > setting_created_at:
         return True
     return False
 
 
-def getRedisKey(blog_id, url, filepath):
+def compare_date(stime, etime):
+    """
+    时间比较
+    :param stime: Mon Apr 17 14:54:10 +0800 2023
+    :param etime: 2022-01-01 00:00:00
+    :return: 最临近的时间-True
+    """
+    t = time_formatting(stime, usefilename=False, strftime=True)
+    s_time = datetime.datetime.strptime(t, '%Y-%m-%d %H:%M:%S')
+    e_time = datetime.datetime.strptime(etime, '%Y-%m-%d %H:%M:%S')
+    if s_time.date() > e_time.date():
+        return True
+    else:
+        if s_time.time() > s_time.time():
+            return True
+    return False
+
+
+def get_time_now():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def getRedisKey(uid, url, filepath):
     """
     获取redis key
-    :param blog_id:
+    :param uid:
     :param url:
     :param filepath:
     :return:
     """
     if "?" in url:
         url = url.split("?")[0]
-    str_data = f"{blog_id}&{url}&{filepath}"
+    str_data = f"{uid}&{url}&{filepath}"
     return get_str_md5(str_data=str_data)
 
 
