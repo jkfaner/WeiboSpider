@@ -164,7 +164,7 @@ class RequestIter(Request):
         # 此时since_id='' list=[...]
         bottom_tips_visible = self.extractorApi.find_first_data(resp=response_json, target="bottom_tips_visible")
         if bottom_tips_visible:
-            logger.info("[uid]博主设置仅展示半年内的微博,将不再获取博客")
+            logger.info(f"[{uid}]博主设置仅展示半年内的微博,将不再获取博客")
             yield [uid]
         else:
             if result_list:

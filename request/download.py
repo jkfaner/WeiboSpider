@@ -177,56 +177,63 @@ class DownloadMiddleware(Cache):
 
         return new_blogs
 
+    def update_folder_name(self, uid: str, screen_name: str, folder_name: str):
+        """
+        修改文件夹名称
+        （需要就修改不需要就不修改）
+        :param uid: uid
+        :param screen_name: 来去之间（现名）
+        :param folder_name: img/原创微博图片
+        :return: True-修改
+        """
+        new_path = os.path.join(os.path.join(self.rootPath, screen_name), folder_name)
+        # 查询曾用名
+        former_name_item = self.select_weibo_former_name(uid)
+        for former_name in former_name_item.get("list"):
+            # 查询曾用名地址
+            old_path = os.path.join(os.path.join(self.rootPath, former_name), folder_name)
+            if (os.path.exists(old_path)) and (former_name != screen_name) and (not os.path.exists(new_path)):
+                # 存在且曾用名与现名不同
+                os.rename(old_path, new_path)
+                logger.info("更新文件夹成功：{} -> {}".format(old_path, new_path))
+                # 记录现名
+                self.insert_weibo_screen_name(uid, screen_name)
+                return True
+        # 创建：首次、未修改
+        if not os.path.exists(new_path):
+            os.makedirs(new_path)
+            logger.info("文件夹创建成功：{}".format(new_path))
+        return False
+
     def update_folder(self, uid: str, screen_name: str, folder_name: str, filename: str) -> tuple:
         """
         更新文件夹
-        :param uid:
-        :param filename:
-        :param folder_name:
-        :param screen_name:
+
+        文件夹：self.rootPath/screen_name/folder_name
+        os.path.join(os.path.join(self.rootPath, screen_name), folder_name)
+
+        :param uid: uid
+        :param filename: 20230514_4901317619223955_1.jpg
+        :param folder_name: img/原创微博图片
+        :param screen_name: 来去之间
         :return:
         """
+        # 查询用户名是否存在
         _screen_name = self.select_weibo_user(uid=uid)
         if not _screen_name:
-            # 创建文件夹
-            path = os.path.join(os.path.join(self.rootPath, screen_name), folder_name)
-            if not os.path.exists(path):
-                os.makedirs(path)
-                logger.info("文件夹创建成功：{}".format(path))
+            new_path = os.path.join(os.path.join(self.rootPath, screen_name), folder_name)
+            # 不存在->已修改
+            self.update_folder_name(uid, screen_name, folder_name)
             # 更新博主screen_name
             self.update_weibo_user(uid=uid, screen_name=screen_name)
-            # 记录曾用名
-            self.insert_weibo_screen_name(uid, screen_name)
         else:
-            # 获取曾用名
-            former_name = _screen_name
-            former_name_item = self.select_weibo_former_name(uid)
-            for former_name in former_name_item.get("list"):
-                former_name = former_name
-
-            # 数据库有数据
-            # 修改本地文件夹
-            # '/Users/xxx/Downloads/weibo/_screen_name'
-            old_screen_name_path = os.path.join(self.rootPath, former_name)
-            # '/Users/xxx/Downloads/weibo/_screen_name/img/原创微博图片'
-            old_path = os.path.join(old_screen_name_path, folder_name)
-            # '/Users/xxx/Downloads/weibo/screen_name'
-            new_screen_name_path = os.path.join(self.rootPath, screen_name)
-            # '/Users/xx/Downloads/weibo/screen_name/img/原创微博图片'
-            new_path = os.path.join(new_screen_name_path, folder_name)
-
-            if not os.path.exists(new_path) and os.path.exists(old_path):
-                os.rename(old_screen_name_path, new_screen_name_path)
-                logger.info("更新文件夹成功：{} -> {}".format(old_path, new_path))
-            elif not os.path.exists(new_path):
-                # 创建新文件夹
-                os.makedirs(new_path)
-                logger.info("文件夹创建成功：{}".format(new_path))
+            # 存在->未修改、已修改
+            self.update_folder_name(uid, _screen_name, folder_name)
+            new_path = os.path.join(os.path.join(self.rootPath, _screen_name), folder_name)
             # 更新数据
-            self.update_weibo_user(uid=uid, screen_name=screen_name)
+            self.update_weibo_user(uid=uid, screen_name=_screen_name)
             # 记录曾用名
             self.insert_weibo_screen_name(uid, screen_name)
-
         filepath = os.path.join(new_path, filename)
         return new_path, filepath
 
