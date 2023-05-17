@@ -9,6 +9,7 @@
 @File:download.py
 @Desc:
 """
+import json
 import logging
 import os
 from typing import List
@@ -41,6 +42,32 @@ class DownloadLoader(object):
 
 
 class RedisCache(DownloadLoader):
+
+    def insert_weibo_screen_name(self, uid: str, screen_name: str):
+        """
+        插入博主用户名
+        :param uid: uid
+        :param screen_name: 用户名
+        :return:
+        """
+        former_name_item = self.select_weibo_former_name(uid)
+        former_names = former_name_item["list"]
+        if screen_name not in former_names:
+            former_names.append(screen_name)
+        former_name_item['size'] = len(former_names)
+        inset_data = json.dumps(former_name_item, ensure_ascii=False)
+        self.redis_client.hset(constants.REDIS_SPIDER_USER_FORMER_NAME, uid, inset_data)
+
+    def select_weibo_former_name(self, uid: str) -> dict:
+        """
+        获取博主曾用名
+        :param uid:
+        :return:
+        """
+        former_name_item = self.redis_client.hget(constants.REDIS_SPIDER_USER_FORMER_NAME, uid)
+        if former_name_item:
+            return json.loads(former_name_item)
+        return dict(list=list(), size=0)
 
     def select_weibo_user(self, uid: str):
         """
@@ -166,31 +193,48 @@ class DownloadMiddleware(Cache):
             if not os.path.exists(path):
                 os.makedirs(path)
                 logger.info("文件夹创建成功：{}".format(path))
+            else:
+                # 修改文件夹
+                new_path = os.path.join(os.path.join(self.rootPath, screen_name + "=" + uid), folder_name)
+                if not os.path.exists(new_path):
+                    os.rename(path, new_path)
+                    logger.info("更新文件夹成功：{} -> {}".format(path, new_path))
+            # 更新博主screen_name
             self.update_weibo_user(uid=uid, screen_name=screen_name)
+            # 记录曾用名
+            self.insert_weibo_screen_name(uid, screen_name)
         else:
+            # 获取曾用名
+            former_name = _screen_name
+            former_name_item = self.select_weibo_former_name(uid)
+            for former_name in former_name_item.get("list"):
+                former_name = former_name
+
             # 数据库有数据
             # 修改本地文件夹
             # '/Users/xxx/Downloads/weibo/_screen_name'
-            _screen_name_path = os.path.join(self.rootPath, _screen_name)
+            old_screen_name_path = os.path.join(self.rootPath, former_name)
             # '/Users/xxx/Downloads/weibo/_screen_name/img/原创微博图片'
-            _path = os.path.join(_screen_name_path, folder_name)
+            old_path = os.path.join(old_screen_name_path, folder_name)
             # '/Users/xxx/Downloads/weibo/screen_name'
-            screen_name_path = os.path.join(self.rootPath, screen_name)
+            new_screen_name_path = os.path.join(self.rootPath, screen_name)
             # '/Users/xx/Downloads/weibo/screen_name/img/原创微博图片'
-            path = os.path.join(screen_name_path, folder_name)
+            new_path = os.path.join(new_screen_name_path, folder_name)
 
-            if not os.path.exists(path) and os.path.exists(_path):
-                os.rename(_screen_name_path, screen_name_path)
-                logger.info("更新文件夹成功：{} -> {}".format(_path, path))
-            elif not os.path.exists(path):
+            if not os.path.exists(new_path) and os.path.exists(old_path):
+                os.rename(old_screen_name_path, new_screen_name_path)
+                logger.info("更新文件夹成功：{} -> {}".format(old_path, new_path))
+            elif not os.path.exists(new_path):
                 # 创建新文件夹
-                os.makedirs(path)
-                logger.info("文件夹创建成功：{}".format(path))
+                os.makedirs(new_path)
+                logger.info("文件夹创建成功：{}".format(new_path))
             # 更新数据
             self.update_weibo_user(uid=uid, screen_name=screen_name)
+            # 记录曾用名
+            self.insert_weibo_screen_name(uid, screen_name)
 
-        filepath = os.path.join(path, filename)
-        return path, filepath
+        filepath = os.path.join(new_path, filename)
+        return new_path, filepath
 
     def finish_download(self, uid, url, filepath):
         """
