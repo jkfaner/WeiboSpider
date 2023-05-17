@@ -9,6 +9,7 @@
 @File:testRequestIter.py
 @Desc:
 """
+import logging
 import time
 from typing import List
 
@@ -64,7 +65,7 @@ class SpiderDefaultFollow(BaseSpider):
         for item in self.requestIter.getUserFollowIter(uid=uid):
             yield self.extractor_user(item)
 
-    @LoggerAOP(message="爬取关注->默认爬虫规则")
+    @LoggerAOP(message="爬取关注->默认爬虫规则", level=logging.INFO, save=True)
     def spider_iter(self, *args, **kwargs):
         return self.get_user(*args, **kwargs)
 
@@ -76,7 +77,7 @@ class SpiderNewFollow(BaseSpider):
         for item in self.requestIter.getUserFollowByNewFollowIter():
             yield self.extractor_user(item)
 
-    @LoggerAOP(message="爬取关注->最新关注顺序")
+    @LoggerAOP(message="爬取关注->最新关注顺序", level=logging.INFO, save=True)
     def spider_iter(self, *args, **kwargs):
         return self.get_user(*args, **kwargs)
 
@@ -88,7 +89,7 @@ class SpiderNewPublishFollow(BaseSpider):
         for item in self.requestIter.getUserFollowByNewPublicIter():
             yield self.extractor_user(item)
 
-    @LoggerAOP(message="爬取关注->最新有发布的用户顺序")
+    @LoggerAOP(message="爬取关注->最新有发布的用户顺序", level=logging.INFO, save=True)
     def spider_iter(self, *args, **kwargs):
         return self.get_user(*args, **kwargs)
 
@@ -100,7 +101,7 @@ class SpiderFollow(BaseSpider):
         super(SpiderFollow, self).__init__()
         self.obj = obj
 
-    @LoggerAOP(message="获取博客信息")
+    @LoggerAOP(message="获取博客信息", level=logging.INFO, save=True)
     def get_blog_iter(self, users: List[User]) -> List[BlogType]:
         """
         获取博客
@@ -117,7 +118,7 @@ class SpiderFollow(BaseSpider):
                     yield blogs, user
                 time.sleep(2)
 
-    @LoggerAOP(message="执行入口->爬取关注")
+    @LoggerAOP(message="执行入口->爬取关注", level=logging.INFO, save=True)
     def run(self, *args, **kwargs):
         for users in self.obj.spider_iter():
             for blogs, user in self.get_blog_iter(users=users):
@@ -127,7 +128,7 @@ class SpiderFollow(BaseSpider):
 class SpiderRefresh(BaseSpider):
     """刷微博"""
 
-    @LoggerAOP(message="执行入口->刷微博")
+    @LoggerAOP(message="执行入口->刷微博", level=logging.INFO, save=True)
     def run(self, *args, **kwargs):
         pass
 

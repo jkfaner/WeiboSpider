@@ -10,6 +10,8 @@
 @Desc:登录
 """
 import json
+import logging
+
 import requests
 from DecryptLogin.core import weibo
 
@@ -52,7 +54,7 @@ class LoginRedis(LoginLoader):
         session.cookies = cookiejar
 
     @staticmethod
-    @LoggerAOP(message="检查登录...")
+    @LoggerAOP(message="检查登录...", level=logging.INFO, save=True)
     def is_login(fetch):
         """
         检查cookie是否失效
@@ -103,7 +105,7 @@ class LoginRedis(LoginLoader):
         """
         return requests.utils.cookiejar_from_dict(cookies, cookiejar=None, overwrite=True)
 
-    @LoggerAOP(message="联网登录...")
+    @LoggerAOP(message="联网登录...", level=logging.INFO, save=True)
     def login_online(self, session: Session, insert: bool):
         """
         登录
@@ -121,7 +123,7 @@ class LoginRedis(LoginLoader):
         cookiejar = self.cookiejar_from_str(cookies)
         self.set_cookies(session=session, cookiejar=cookiejar)
 
-    @LoggerAOP(message="本地登录...")
+    @LoggerAOP(message="本地登录...", level=logging.INFO, save=True)
     def login_localhost(self, session: Session):
         """
         本地登录

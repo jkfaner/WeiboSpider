@@ -9,6 +9,8 @@
 @File:request.py
 @Desc:Request请求
 """
+import logging
+
 from aop import LoggerAOP
 from extractor.extractor import ExtractorApi
 from loader import ProjectLoader
@@ -22,7 +24,7 @@ class SessionMiddleware(Session):
     loginObj = Login()
     login_times = 1
 
-    @LoggerAOP(message="Request URL：{}", index=1)
+    @LoggerAOP(message="Request URL：{}", index=1, level=logging.INFO, save=True)
     def fetch(self, url, headers=None, method='get', session=None, **kwargs):
         # 首次必须登录
         if self.login_times == 1:

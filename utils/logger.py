@@ -67,4 +67,4 @@ class Logger:
         return self._logger
 
 
-logger = Logger(level=logging.INFO, save=False).logger
+logger = Logger(level=logging.INFO, save=True).logger

@@ -9,7 +9,7 @@
 @File:download.py
 @Desc:
 """
-
+import logging
 import os
 from typing import List
 
@@ -98,7 +98,8 @@ class DownloadMiddleware(Cache):
             sys.exit()
 
     @FilterAOP.filter_download
-    @LoggerAOP(message="[{}]博客数据分发中:{}", index=["kwargs['user'].screen_name", "len(kwargs['blogs'])"])
+    @LoggerAOP(message="[{}]博客数据分发中:{}", index=["kwargs['user'].screen_name", "len(kwargs['blogs'])"],
+               level=logging.INFO, save=True)
     def distribute_data(self, blogs: List[Blog], user: User) -> List[DownloadEntity]:
         """
         数据分发
@@ -255,7 +256,7 @@ class Download(DownloadMiddleware):
         return first_byte, file_size
 
     @staticmethod
-    @LoggerAOP(message="媒体下载链接：{}", index=["args[0].url"])
+    @LoggerAOP(message="媒体下载链接：{}", index=["args[0].url"], level=logging.INFO, save=True)
     def __segmented_download(item: DownloadEntity, first_byte, file_size, bar=True):
         """
         分段下载
