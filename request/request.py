@@ -157,11 +157,19 @@ class RequestIter(Request):
         """
         response_json = self.getUserBlog(uid=uid, page=page, since_id=since_id)
         result_list = self.extractorApi.find_first_data(resp=response_json, target="list")
-        if result_list:
-            yield response_json
-            since_id = self.extractorApi.find_first_data(resp=response_json, target="since_id")
-            if since_id:
-                yield from self.getUserBlogIter(uid=uid, page=page + 1, since_id=since_id)
-        else:
-            # 用于全量爬取标志
+
+        # 博主设置半年内查看会有以下字段：bottom_tips_visible=true,bottom_tips_text=博主设置仅展示半年内的微博
+        # 此时since_id='' list=[...]
+        bottom_tips_visible = self.extractorApi.find_first_data(resp=response_json, target="bottom_tips_visible")
+        if bottom_tips_visible:
+            logger.info("[uid]博主设置仅展示半年内的微博,将不再获取博客")
             yield [uid]
+        else:
+            if result_list:
+                yield response_json
+                since_id = self.extractorApi.find_first_data(resp=response_json, target="since_id")
+                if since_id:
+                    yield from self.getUserBlogIter(uid=uid, page=page + 1, since_id=since_id)
+            else:
+                # 用于全量爬取标志
+                yield [uid]

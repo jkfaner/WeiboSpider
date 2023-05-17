@@ -13,11 +13,11 @@ import functools
 import logging
 import sys
 from typing import List
+
 import utils.constants as constants
-from entity.downloadEntity import DownloadEntity
 from loader import ProjectLoader
 from utils.logger import logger, Logger
-from utils.tool import compare_date, get_time_now, time_formatting
+from utils.tool import compare_date, time_formatting
 
 filter_config = ProjectLoader.getSpiderConfig().get("filter")
 FILTER_USER = filter_config.get("filter-user")
@@ -90,12 +90,8 @@ class FilterAOP:
                     if blog.forward:
                         new_blogs.append(blog.forward)
 
-            len_blogs = len(new_blogs)
-            for index, new_blog in enumerate(new_blogs):
-                msg1 = "[{index}/{len_blogs}]".format(index=index, len_blogs=len_blogs)
-                msg2 = "[原创|转发|所有]"
-                msg3 = f"筛选博客:{kwargs['user'].idstr}->{kwargs['user'].screen_name} ->> {new_blog.blog_id}"
-                logger.info(msg1 + msg2 + msg3)
+            message = f"[过滤类型]：放行--> {kwargs['user'].screen_name}[{kwargs['user'].idstr}]的{len(new_blogs)}条博客"
+            logger.info(message)
             return new_blogs
 
         @functools.wraps(func)
@@ -108,18 +104,41 @@ class FilterAOP:
     def filter_blog_by_date(func):
         """通过设置的日期筛选博客"""
 
+        def log(blog, message):
+            ctime = time_formatting(blog.created_at, usefilename=False, strftime=True)
+            videos_length = 0 if not blog.videos else 1
+            message_str1 = f"[过滤日期] 放行--> {message}：{blog.screen_name}[{blog.id}] 在{ctime}发表的博客，"
+            message_str2 = f"包含：{len(blog.images)}张图片、{len(blog.livephoto_video)}条live视频、{videos_length}条视频"
+            logger.info(message_str1 + message_str2)
+
         def filter_data(self, blog, entity, new_blogs):
-            spider_new_time = self.download.redis_client.hget(name=constants.REDIS_SPIDER_USER_START,key=entity.id)
+            if entity.id is None:
+                return
+            spider_new_time = self.download.redis_client.hget(name=constants.REDIS_SPIDER_USER_START, key=entity.id)
+
+            # 没有爬取记录（下载记录）：直接放行
+            if spider_new_time is None:
+                log(entity, "首次爬取")
+                new_blogs.append(blog)
+                return
+
             full_uid_list = [i for i in self.download.redis_client.sscan_iter(name=constants.REDIS_SPIDER_USER_FULL)]
             if str(entity.id) in full_uid_list:
+
+                # 已经全量爬取，但是无下载记录，可能下载记录被删除：直接放行
                 if spider_new_time is None:
+                    log(entity, "未成功记录")
                     new_blogs.append(blog)
                     return
-                # 全量爬取,放行全量完成时间之后的数据,且排除置顶(置顶优先爬取,全量即爬)
+
+                # 放行上次记录之后的数据,且排除置顶(置顶优先爬取,全量即爬)
                 if compare_date(stime=entity.created_at, etime=spider_new_time) and not entity.is_top:
+                    log(entity, "已全量爬取")
                     new_blogs.append(blog)
                     return
             else:
+                # 未全量且非首次（可能全量数据未记录）
+                log(entity, "未全量且非首次")
                 new_blogs.append(blog)
 
         @functools.wraps(func)
@@ -155,7 +174,8 @@ class FilterAOP:
                 # 是否已经下载 包含下载完成的以及404错误的以及该路径文件是否存在
                 # 注意：如果文件被删除且提示redis数库中已经存在 那么文件将继续下载！！！
                 # 注意：图片下载地址为静态地址 视频下载地址为动态地址！存在重复写入同文件数据！！！
-                if not self.finish_download(uid=download_data.blog_id, url=download_data.url, filepath=filepath):
+                is_finished = self.finish_download(uid=download_data.blog_id, url=download_data.url, filepath=filepath)
+                if not is_finished:
                     download_data.filepath = filepath
                     new_download_datas.append(download_data)
             return new_download_datas
@@ -236,7 +256,8 @@ class LoggerAOP(Logger):
         @functools.wraps(func)
         def new_func(self, *args, **kwargs):
             blogs = func(self, *args, **kwargs)
-            logger.info(f"[{len(blogs)}]提取博客:{kwargs['user'].idstr}->{kwargs['user'].screen_name}")
+            message = f"[解析博客]：成功解析--> {kwargs['user'].screen_name}[{kwargs['user'].idstr}]发布的{len(blogs)}条博客"
+            logger.info(message)
             return blogs
 
         return new_func

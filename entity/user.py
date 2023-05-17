@@ -6,11 +6,11 @@
 @Ide:PyCharm
 @Time:2022/02/10 16:31:52
 @Project:WeiboSpider
-@File:userEntity.py
+@File:user.py
 @Desc:
 '''
 
-class UserEntity(object):
+class User(object):
 
 	def __init__(self):
 		self.__id = None

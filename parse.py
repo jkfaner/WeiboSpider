@@ -11,9 +11,9 @@
 """
 from typing import List
 
-from entity.userEntity import UserEntity
-from entity.weiboTypeEntity import WeiboTypeEntity
-from extractor.weiboExtractor import ExtractorWeibo
+from entity.user import User
+from entity.blogType import BlogType
+from extractor.extractor_wb import ExtractorWeibo
 from aop import FilterAOP, LoggerAOP
 
 
@@ -22,8 +22,7 @@ class WeiboParse(object):
     extractorWeibo = ExtractorWeibo()
 
     @FilterAOP.filter_user
-    # @LoggerAOP.extractor_user_log
-    def extractor_user(self, response, *args, **kwargs) -> List[UserEntity]:
+    def extractor_user(self, response, *args, **kwargs) -> List[User]:
         """
         提取用户
         :param response: json str or dict
@@ -34,7 +33,7 @@ class WeiboParse(object):
     @FilterAOP.filter_blog_by_type
     @FilterAOP.filter_blog_by_date
     @LoggerAOP.extractor_blog_log
-    def extractor_blog(self, response, *args, **kwargs) -> List[WeiboTypeEntity]:
+    def extractor_blog(self, response, *args, **kwargs) -> List[BlogType]:
         """
         提取博客
         :param response:

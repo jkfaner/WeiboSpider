@@ -18,8 +18,8 @@ from tqdm import tqdm
 
 import utils.constants as constants
 from entity.downloadEntity import DownloadEntity
-from entity.userEntity import UserEntity
-from entity.weiboEntity import WeiboEntity
+from entity.user import User
+from entity.blog import Blog
 from loader import ProjectLoader
 from aop import FilterAOP, LoggerAOP
 from utils.exception import NOTContentLengthError, FinishedError, NotFound
@@ -31,44 +31,16 @@ from utils.tool import thread_pool, EntityToJson
 class DownloadLoader(object):
     _spider_config = ProjectLoader.getSpiderConfig()
     _database_config = ProjectLoader.getDatabaseConfig()
-    _mysql_client = ProjectLoader.getMysqlClient()
     _redis_client = ProjectLoader.getRedisClient()
 
     def __init__(self):
         self.root_path = self._spider_config["download"]["root"]
-        self.spider_sql_dict = self._database_config["mysql"]["sql"]["spider"]
-        self.mysql_client = self._mysql_client
         self.redis_client = self._redis_client
         self.thread = self._spider_config["download"]["thread"]
         self.workers = self._spider_config["download"]["workers"]
 
 
-class MySQLCache(DownloadLoader):
-    def select_weibo_user(self, uid: str):
-        """
-        查询数据库微博用户
-        :param uid:
-        :return:
-        """
-        sql = self.spider_sql_dict.get("select_weibo_user")
-        result = self.mysql_client.getOne(sql=sql, param=[uid])
-        if result:
-            result = str(result.get("screen_name"), encoding="utf-8")
-        return result
-
-    def update_weibo_user(self, uid: str, screen_name: str):
-        """
-        插入数据&更新数据 数据库有数据就写入 没数据就跟行 weibo_id为唯一索引
-        :param uid:
-        :param screen_name:
-        :return:
-        """
-        sql = self.spider_sql_dict.get("update_weibo_user")
-        self.mysql_client.insert(sql=sql, param=[uid, screen_name, screen_name])
-        self.mysql_client.end()
-
-
-class RedisCache(MySQLCache):
+class RedisCache(DownloadLoader):
 
     def select_weibo_user(self, uid: str):
         """
@@ -127,7 +99,7 @@ class DownloadMiddleware(Cache):
 
     @FilterAOP.filter_download
     @LoggerAOP(message="[{}]博客数据分发中:{}", index=["kwargs['user'].screen_name", "len(kwargs['blogs'])"])
-    def distribute_data(self, blogs: List[WeiboEntity], user: UserEntity) -> List[DownloadEntity]:
+    def distribute_data(self, blogs: List[Blog], user: User) -> List[DownloadEntity]:
         """
         数据分发
         :param blogs:
@@ -322,7 +294,7 @@ class Download(DownloadMiddleware):
             first_byte, file_size = self.__get_file_size(url=item.url, filepath=item.filepath)
         except FinishedError:
             # 再次写入数据库 防止下载完成后没有及时写入数据库
-            logger.warning("已经下载完成，但是上次没有写入redis，本次写入：key:{}".format(redis_key))
+            logger.warning("媒体文件已经下载，重新记录中：key -> {}".format(redis_key))
             self.redis_client.hset(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=redis_key, value=redis_value)
             return
         except NotFound:
@@ -333,11 +305,15 @@ class Download(DownloadMiddleware):
             logger.error("请求错误：{}".format(e))
             return
 
-        # 开启线程下载就没有详情精度条提示 只有完成精度条提示
-        if self.thread:
-            self.__segmented_download(item, first_byte, file_size, False)
-        else:
-            self.__segmented_download(item, first_byte, file_size, True)
+        try:
+            # 开启线程下载就没有详情精度条提示 只有完成精度条提示
+            if self.thread:
+                self.__segmented_download(item, first_byte, file_size, False)
+            else:
+                self.__segmented_download(item, first_byte, file_size, True)
+        except requests.exceptions.SSLError as e:
+            logger.error(e)
+            self.__download(item)
 
         # 下载完成就写入数据库
         self.redis_client.hset(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=redis_key, value=redis_value)

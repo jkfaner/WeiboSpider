@@ -6,10 +6,12 @@
 @Ide:PyCharm
 @Time:2022/2/12 16:07
 @Project:WeiboSpider
-@File:weiboTypeEntity.py
+@File:blogType.py
 @Desc:
 """
-class WeiboTypeEntity(object):
+
+
+class BlogType(object):
     """
     原创 or 转发
     original or forward

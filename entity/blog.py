@@ -6,12 +6,12 @@
 @Ide:PyCharm
 @Time:2022/02/10 14:12:42
 @Project:WeiboSpider
-@File:weiboEntity.py
+@File:blog.py
 @Desc:
 '''
 
 
-class WeiboEntity(object):
+class Blog(object):
 
     def __init__(self):
         self.__is_top = None

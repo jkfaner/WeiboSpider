@@ -6,15 +6,15 @@
 @Ide:PyCharm
 @Time:2022/1/23 19:02
 @Project:WeiboSpider
-@File:weiboExtractor.py
+@File:extractor_wb.py
 @Desc:微博json数据解析
 """
 from typing import List
 
 from entity.playInfoEntity import PlayInfoEntity
-from entity.userEntity import UserEntity
-from entity.weiboEntity import WeiboEntity
-from entity.weiboTypeEntity import WeiboTypeEntity
+from entity.user import User
+from entity.blog import Blog
+from entity.blogType import BlogType
 import utils.constants as constants
 from extractor.extractor import ExtractorApi
 from utils.logger import logger
@@ -23,42 +23,45 @@ from utils.logger import logger
 class ExtractorUserInfo(ExtractorApi):
 
     @staticmethod
-    def __extractor_userInfo(user: dict or list) -> UserEntity:
+    def _extractor_userInfo(user: dict or list) -> User:
         """
         获取博主信息
         :param user:
         :return:
         """
-        userEntityObj = UserEntity()
-        for k, v in userEntityObj.__dict__.items():
+        u = User()
+        for k, v in u.__dict__.items():
             targ = k.split("__")[-1]
-            setattr(userEntityObj, targ, user.get(targ))
-        return userEntityObj
+            setattr(u, targ, user.get(targ))
+        return u
 
-    def extractor_userInfo(self, resp: dict) -> List[UserEntity]:
+    def extractor_userInfo(self, resp: dict) -> List[User]:
         """
         博文中的用户
         :param resp:
         :return:
         """
-        user_info_list = list()
+        users = list()
         if not resp:
-            # 提高效率 无数据 直接返回
-            user_info_list.append(UserEntity())
-            return user_info_list
+            users.append(User())
+            return users
+
         user = self.find_first_data(resp, 'user')
         user = user if user else self.find_first_data(resp, 'users')
         if isinstance(user, list):
             for _user in user:
-                user_info_list.append(self.__extractor_userInfo(_user))
+                users.append(self._extractor_userInfo(_user))
         elif isinstance(user, dict):
-            user_info_list.append(self.__extractor_userInfo(user))
-        return user_info_list
+            users.append(self._extractor_userInfo(user))
+        else:
+            users.append(User())
+
+        return users
 
 
 class ExtractorWeibo(ExtractorUserInfo):
 
-    def extractor_weibo(self, resp: str) -> List[WeiboTypeEntity]:
+    def extractor_weibo(self, resp: str) -> List[BlogType]:
         """
         提取微博的微博信息
         :param resp:
@@ -136,13 +139,13 @@ class ExtractorWeibo(ExtractorUserInfo):
             videos.append(playInfoObj)
         return videos
 
-    def __extractor_info(self, item: dict, is_original: bool) -> WeiboEntity:
+    def __extractor_info(self, item: dict, is_original: bool) -> Blog:
         """
         提取信息
         :param item:
         :return:
         """
-        weiboEntity = WeiboEntity()
+        weiboEntity = Blog()
         # 检查是否是置顶 置顶数据在筛选过程中不中断
         is_top = self.find_first_data(resp=item, target="isTop")
         if is_top and isinstance(is_top, int) and is_top == 1:
@@ -175,13 +178,13 @@ class ExtractorWeibo(ExtractorUserInfo):
             logger.warning("微博数据无法提取数据，原因：{}".format(self.find_first_data(item, "text_raw")))
         return weiboEntity
 
-    def __clean_info(self, item: dict) -> WeiboTypeEntity:
+    def __clean_info(self, item: dict) -> BlogType:
         """
         提取信息
         :param item:
         :return:
         """
-        weiboTypeEntity = WeiboTypeEntity()
+        weiboTypeEntity = BlogType()
         # 点赞 快转 出现的按钮标签 followBtnCode
         # 快转了 screen_name_suffix_new
         if "followBtnCode" in item:
@@ -198,7 +201,10 @@ class ExtractorWeibo(ExtractorUserInfo):
                 return weiboTypeEntity
 
         if item.get("title"):
-            if "赞过的微博" in item["title"].get("text"):
+            # 很多很多 包括赞过的 评论过的。。。
+            # if "赞过的微博" in item["title"].get("text"):
+            #     return weiboTypeEntity
+            if item["title"].get("text"):
                 return weiboTypeEntity
 
         # 原创与转发分离

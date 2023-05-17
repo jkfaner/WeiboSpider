@@ -12,16 +12,14 @@
 import time
 from typing import List
 
-from entity.userEntity import UserEntity
-from entity.weiboEntity import WeiboEntity
-from entity.weiboTypeEntity import WeiboTypeEntity
 from aop import LoggerAOP, FilterAOP
+from entity.blogType import BlogType
+from entity.user import User
 from parse import WeiboParse
 from request.download import Download
 from request.fetch import Session
 from request.login import Login
 from request.request import RequestIter
-from utils.exception import DateError
 
 
 class InitMain(WeiboParse, Session):
@@ -53,9 +51,7 @@ class BaseSpider(InitMain):
 class SpiderDefaultFollow(BaseSpider):
     """爬取关注->默认爬虫规则"""
 
-    @LoggerAOP(message="爬取关注->默认爬虫规则")
-    def spider_iter(self, *args, **kwargs):
-        # 获取uid
+    def get_user(self, *args, **kwargs):
         login = Login()
         cookies_item = login.select_cookies()
         if cookies_item:
@@ -64,26 +60,37 @@ class SpiderDefaultFollow(BaseSpider):
             login.login_online(session=self.session, insert=True)
             cookies_item = login.select_cookies()
             uid = cookies_item['uid']
+
         for item in self.requestIter.getUserFollowIter(uid=uid):
             yield self.extractor_user(item)
+
+    @LoggerAOP(message="爬取关注->默认爬虫规则")
+    def spider_iter(self, *args, **kwargs):
+        return self.get_user(*args, **kwargs)
 
 
 class SpiderNewFollow(BaseSpider):
     """爬取关注->最新关注顺序"""
 
-    @LoggerAOP(message="爬取关注->最新关注顺序")
-    def spider_iter(self, *args, **kwargs):
+    def get_user(self, *args, **kwargs):
         for item in self.requestIter.getUserFollowByNewFollowIter():
             yield self.extractor_user(item)
+
+    @LoggerAOP(message="爬取关注->最新关注顺序")
+    def spider_iter(self, *args, **kwargs):
+        return self.get_user(*args, **kwargs)
 
 
 class SpiderNewPublishFollow(BaseSpider):
     """爬取关注->最新有发布的用户顺序"""
 
-    @LoggerAOP(message="爬取关注->最新有发布的用户顺序")
-    def spider_iter(self, *args, **kwargs):
+    def get_user(self, *args, **kwargs):
         for item in self.requestIter.getUserFollowByNewPublicIter():
             yield self.extractor_user(item)
+
+    @LoggerAOP(message="爬取关注->最新有发布的用户顺序")
+    def spider_iter(self, *args, **kwargs):
+        return self.get_user(*args, **kwargs)
 
 
 class SpiderFollow(BaseSpider):
@@ -94,7 +101,7 @@ class SpiderFollow(BaseSpider):
         self.obj = obj
 
     @LoggerAOP(message="获取博客信息")
-    def get_blog_iter(self, users: List[UserEntity]) -> List[WeiboTypeEntity]:
+    def get_blog_iter(self, users: List[User]) -> List[BlogType]:
         """
         获取博客
         :param users:
@@ -105,16 +112,10 @@ class SpiderFollow(BaseSpider):
                 if blog == [user.idstr]:
                     yield blog, user
 
-                blogs = None
-                try:
-                    blogs = self.extractor_blog(response=blog, user=user)
-                except DateError as e:
-                    blogs = e.args[1]
-                    break
-                finally:
-                    if blogs:
-                        yield blogs, user
-                    time.sleep(2)
+                blogs = self.extractor_blog(response=blog, user=user)
+                if blogs:
+                    yield blogs, user
+                time.sleep(2)
 
     @LoggerAOP(message="执行入口->爬取关注")
     def run(self, *args, **kwargs):

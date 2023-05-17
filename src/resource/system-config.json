@@ -1,11 +1,11 @@
 {
   "spider": {
-    "rule": 1,
+    "rule": 2,
     "login": {
       "uid": "7367188627"
     },
     "download": {
-      "root": "/Users/llb/Library/Mobile Documents/com~apple~CloudDocs/spiderDemo",
+      "root": "/Volumes/photo",
       "thread": true,
       "workers": 8
     },
@@ -14,19 +14,52 @@
       "filter-blog": true,
       "filter-type": "original",
       "original": [
-        "https://weibo.com/u/7796248561"
+        "https://weibo.com/u/2645500992",
+        "https://weibo.com/u/1838717532",
+        "https://weibo.com/u/1963546385",
+        "https://weibo.com/u/7058255863",
+        "https://weibo.com/u/7719953899",
+        "https://weibo.com/u/1773761872",
+        "https://weibo.com/u/1837568962",
+        "https://weibo.com/u/7494359702",
+        "https://weibo.com/u/2793306070"
       ],
-      "forward": [],
-      "backups": [
-        "https://weibo.com/u/3700763437",
+      "forward": [
+        "https://weibo.com/u/7796248561",
         "https://weibo.com/u/3887046428",
+        "https://weibo.com/u/2331156311"
+      ],
+      "backups": [
+        "https://weibo.com/u/5703433758",
+        "https://weibo.com/u/7673313355",
+        "https://weibo.com/u/7772277118",
+        "https://weibo.com/u/5522386353",
+        "https://weibo.com/u/3700763437",
+        "https://weibo.com/u/7728580677",
+        "https://weibo.com/u/7796248561",
         "https://weibo.com/u/7772277118",
         "https://weibo.com/u/2645500992",
         "https://weibo.com/u/7680590708",
         "https://weibo.com/u/6091593545",
-        "https://weibo.com/u/7796248561",
-        "https://weibo.com/u/5703433758",
-        "https://weibo.com/u/7728580677",
+        "https://weibo.com/u/7730499913",
+        "https://weibo.com/u/2273982432",
+        "https://weibo.com/u/1799211197",
+        "https://weibo.com/u/7753902527",
+        "https://weibo.com/u/7753225553",
+        "https://weibo.com/u/7655979479",
+        "https://weibo.com/u/7562209699",
+        "https://weibo.com/u/7628044408",
+        "https://weibo.com/u/7772277118",
+        "https://weibo.com/u/2645500992",
+        "https://weibo.com/u/7680590708",
+        "https://weibo.com/u/6091593545",
+        "https://weibo.com/u/7730499913",
+        "https://weibo.com/u/2273982432",
+        "https://weibo.com/u/1799211197",
+        "https://weibo.com/u/7753902527",
+        "https://weibo.com/u/7753225553",
+        "https://weibo.com/u/7655979479",
+        "https://weibo.com/u/7562209699",
         "https://weibo.com/u/7628044408",
         "https://weibo.com/u/6627371236",
         "https://weibo.com/u/6387193336",
@@ -34,10 +67,6 @@
         "https://weibo.com/u/6728017004",
         "https://weibo.com/u/6728017004",
         "https://weibo.com/u/7476335465",
-
-
-
-
         "https://weibo.com/u/7628044408",
         "https://weibo.com/u/7225091153",
         "https://weibo.com/u/1942690145",
@@ -51,40 +80,11 @@
         "https://weibo.com/u/2704945845",
         "https://weibo.com/u/7717308786",
         "https://weibo.com/u/2049075312",
-        "https://weibo.com/u/5522386353",
-        "https://weibo.com/u/1838717532",
-        "https://weibo.com/u/1963546385",
-        "https://weibo.com/u/7058255863",
-        "https://weibo.com/u/7719953899",
-        "https://weibo.com/u/1773761872",
-        "https://weibo.com/u/1837568962",
-        "https://weibo.com/u/7494359702",
-        "https://weibo.com/u/2793306070",
-        "https://weibo.com/u/2331156311"
+        "https://weibo.com/u/5522386353"
       ]
     }
   },
   "database": {
-    "mysql": {
-      "client": {
-        "host": "localhost",
-        "port": 3306,
-        "user": "root",
-        "password": "root",
-        "database": "weibo"
-      },
-      "sql": {
-        "login": {
-          "select_cookies": "SELECT uid,cookies FROM spider_login WHERE uid = %s",
-          "insert_cookies": "INSERT INTO spider_login (uid,cookies) VALUES (%s,%s)",
-          "update_cookies": "UPDATE spider_login SET cookies= %s WHERE uid=%s"
-        },
-        "spider": {
-          "select_weibo_user": "SELECT uid,screen_name FROM spider_user WHERE uid=%s",
-          "update_weibo_user": "INSERT INTO spider_user (uid,screen_name) VALUES (%s,%s)  ON DUPLICATE KEY UPDATE screen_name=%s"
-        }
-      }
-    },
     "redis": {
       "host": "localhost",
       "port": 6379,

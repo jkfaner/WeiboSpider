@@ -11,11 +11,6 @@
 """
 
 
-class DateError(Exception):
-    """日期错误"""
-    pass
-
-
 class NOTContentLengthError(Exception):
     """资源链接失效"""
     pass

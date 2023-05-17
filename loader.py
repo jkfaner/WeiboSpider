@@ -9,7 +9,7 @@
 @File:loader.py
 @Desc:加载器
 """
-from database import MySQlPool, RedisPool
+from database import RedisPool
 from utils.logger import logger
 from utils.tool import load_json
 
@@ -24,7 +24,6 @@ class ProjectLoader(object):
         |___/|___/     |_____| |_| |_____/ \_____/      /_____/ |_|     |_| |_____/ |_____| |_|  \_\ 
     """)
     logger.info("程序正在初始化...")
-    _mysqlClient = None
     _redisClient = None
     _system_config = load_json("./src/resource/system-config.json")
 
@@ -43,20 +42,6 @@ class ProjectLoader(object):
     @classmethod
     def getSystemConfig(cls):
         return cls._system_config
-
-    @classmethod
-    def getMysqlClient(cls):
-        if cls._mysqlClient is None:
-            client = cls._database_config.get("mysql").get("client")
-            cls._mysqlClient = MySQlPool(
-                host=client.get("host"),
-                port=client.get("port"),
-                user=client.get("user"),
-                password=client.get("password"),
-                database=client.get("database")
-            )
-            logger.info("[mysql数据库连接池]:初始化成功->>> {} -> {}".format(client.get("host"), client.get("database")))
-        return cls._mysqlClient
 
     @classmethod
     def getRedisClient(cls):

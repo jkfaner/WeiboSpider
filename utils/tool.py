@@ -115,13 +115,13 @@ def compare_date(stime, etime):
     :param etime: 2022-01-01 00:00:00
     :return: 最临近的时间-True
     """
-    t = time_formatting(stime, usefilename=False, strftime=True)
-    s_time = datetime.datetime.strptime(t, '%Y-%m-%d %H:%M:%S')
+    stime = time_formatting(stime, usefilename=False, strftime=True)
+    s_time = datetime.datetime.strptime(stime, '%Y-%m-%d %H:%M:%S')
     e_time = datetime.datetime.strptime(etime, '%Y-%m-%d %H:%M:%S')
     if s_time.date() > e_time.date():
         return True
-    else:
-        if s_time.time() > s_time.time():
+    elif s_time.date() == e_time.date():
+        if s_time.time() > e_time.time():
             return True
     return False
 
