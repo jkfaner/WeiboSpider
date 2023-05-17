@@ -193,12 +193,6 @@ class DownloadMiddleware(Cache):
             if not os.path.exists(path):
                 os.makedirs(path)
                 logger.info("文件夹创建成功：{}".format(path))
-            else:
-                # 修改文件夹
-                new_path = os.path.join(os.path.join(self.rootPath, screen_name + "=" + uid), folder_name)
-                if not os.path.exists(new_path):
-                    os.rename(path, new_path)
-                    logger.info("更新文件夹成功：{} -> {}".format(path, new_path))
             # 更新博主screen_name
             self.update_weibo_user(uid=uid, screen_name=screen_name)
             # 记录曾用名
