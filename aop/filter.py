@@ -16,7 +16,7 @@ from cache import Cache
 from entity.user import User
 from utils import constants
 from utils.logger import logger
-from utils.tool import compare_date, getRedisKey
+from utils.tool import compare_date, getRedisKey, time_formatting
 
 
 class FilterUser:
@@ -162,11 +162,13 @@ class FilterDownloaded(Cache):
         return wrapper
 
     def do_filter(self, blogs, user: User):
-        # 没有媒体数据且已经全部采集过 更新采集时间
+        # 没有媒体数据且全部采集过 更新采集时间
         if not blogs and user.idstr not in self.get_complete():
             self.record_spider_time(uid=user.idstr)
+            logger.info("[下载过滤]：【{}[{}]】的博客不存在媒体数据且已经全量采集过".format(user.screen_name, user.idstr))
             return
         new_blogs = list()
+        downloaded_blogs = list()
         for blog in blogs:
             uid = blog.blog.id
             screen_name = blog.blog.screen_name
@@ -180,6 +182,11 @@ class FilterDownloaded(Cache):
             if not is_finished:
                 blog.filepath = filepath
                 new_blogs.append(blog)
+            else:
+                downloaded_blogs.append(blog)
+                logger.info(f"[下载过滤]：【{user.screen_name}[{user.idstr}]】在{time_formatting(blog.created_at)}发表的博客，该媒体数据曾经已经成功下载")
+
+        logger.info(f"[下载过滤]：【{user.screen_name}[{user.idstr}]】已下载{len(downloaded_blogs)}条，未下载{len(new_blogs)}条")
         return new_blogs
 
     def update_folder(self, uid: str, screen_name: str, folder_name: str, filename: str) -> tuple:
@@ -293,6 +300,7 @@ class CompleteDownload(Cache):
             if len(blogs) == 1 and blogs[0] == user.idstr:
                 # 当前博主已经完成全量爬取
                 self.record_complete(user.idstr)
+                logger.info("[全部完成]：【{}[{}]】的媒体数据已经全部采集完毕".format(user.screen_name, user.idstr))
                 return []
             # 执行装饰器操作
             return func(*args, **kwargs)
