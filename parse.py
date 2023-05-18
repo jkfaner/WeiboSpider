@@ -9,13 +9,12 @@
 @File:parse.py
 @Desc:解析类
 """
-import logging
 from typing import List
 
 from aop.filter import FilterUser, FilterBlogType, FilterBlogDate, FilterDownloaded, CompleteDownload
-from aop.log import LoggerAOP
 from entity.blog import Blog
 from entity.blogType import BlogType
+from entity.media import Media
 from entity.user import User
 from extractor.extractor_wb import ExtractorWeibo
 from loader import FilterFactory
@@ -49,9 +48,8 @@ class WeiboParse(object):
 class DownloadParse(WeiboParse, Session):
 
     @FilterDownloaded()
-    @LoggerAOP(message="[{}]即将下载的媒体数据有{}条", index=["kwargs['user'].screen_name", "len(kwargs['blogs'])"],level=logging.INFO, save=True)
     @CompleteDownload()
-    def extractor_media(self, blogs: List[Blog], user: User):
+    def extractor_media(self, blogs: List[Blog], user: User) -> List[Media]:
         return self.extractorWeibo.extractor_media(blogs)
 
 

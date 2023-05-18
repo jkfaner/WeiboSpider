@@ -72,11 +72,19 @@ class RedisCache(DownloadLoader):
 
     def record_spider_time(self, uid: str):
         """
-        记录爬取时间
+        记录时间
         :param uid: uid
         :return:
         """
         self.redis_client.hset(name=constants.REDIS_SPIDER_USER_START, key=uid, value=get_time_now())
+
+    def get_spider_time(self, uid):
+        """
+        获取记录时间
+        :param uid: uid
+        :return:
+        """
+        return self.redis_client.hget(name=constants.REDIS_SPIDER_USER_START, key=uid)
 
     def record_error(self, key: str, value: str):
         """
@@ -110,6 +118,13 @@ class RedisCache(DownloadLoader):
         :return:
         """
         self.redis_client.sadd(constants.REDIS_SPIDER_USER_FULL, uid)
+
+    def get_complete(self):
+        """
+        获取全量下载用户
+        :return:
+        """
+        return [i for i in self.redis_client.sscan_iter(name=constants.REDIS_SPIDER_USER_FULL)]
 
 
 class Cache(RedisCache):

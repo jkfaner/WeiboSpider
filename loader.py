@@ -98,17 +98,6 @@ class FilterFactory:
         return users
 
 
-class RedisFactory:
-
-    @classmethod
-    def get_user_spider_time(cls, uid):
-        return ProjectLoader.getRedisClient().hget(name=constants.REDIS_SPIDER_USER_START, key=uid)
-
-    @classmethod
-    def get_full_spider_user(cls):
-        return [i for i in ProjectLoader.getRedisClient().sscan_iter(name=constants.REDIS_SPIDER_USER_FULL)]
-
-
 class DownloadLoader(object):
     _spider_config = ProjectLoader.getSpiderConfig()
     _database_config = ProjectLoader.getDatabaseConfig()

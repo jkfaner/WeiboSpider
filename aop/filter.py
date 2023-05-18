@@ -14,7 +14,6 @@ import os
 
 from cache import Cache
 from entity.user import User
-from loader import RedisFactory
 from utils import constants
 from utils.logger import logger
 from utils.tool import compare_date, getRedisKey
@@ -95,8 +94,9 @@ class FilterBlogType:
         return new_blogs
 
 
-class FilterBlogDate:
+class FilterBlogDate(Cache):
     def __init__(self, *args, **kwargs):
+        super(FilterBlogDate, self).__init__()
         self.args = args
         self.kwargs = kwargs
 
@@ -109,12 +109,11 @@ class FilterBlogDate:
 
         return wrapper
 
-    @staticmethod
-    def do_filter(blogs, *args, **kwargs):
+    def do_filter(self, blogs, *args, **kwargs):
         user = kwargs["user"]  # 博主
 
         # 1.拿到博主的最后采集时间
-        spider_time = RedisFactory.get_user_spider_time(user.idstr)
+        spider_time = self.get_spider_time(user.idstr)
         # 初次采集
         if spider_time is None:
             logger.info(f"[博客日期过滤]：初次采集【{user.screen_name}[{user.idstr}]】的博客，当前有{len(blogs)}条博客")
@@ -122,7 +121,7 @@ class FilterBlogDate:
 
         # 2.增量采集
         # 拿到已经全量采集的用户
-        full_uid_list = RedisFactory.get_full_spider_user()
+        full_uid_list = self.get_complete()
         new_blogs = list()
         if user.idstr in full_uid_list:
             # 遍历检查博客的时间
@@ -163,8 +162,8 @@ class FilterDownloaded(Cache):
         return wrapper
 
     def do_filter(self, blogs, user: User):
-        # 没有媒体数据 更新采集时间
-        if not blogs:
+        # 没有媒体数据且已经全部采集过 更新采集时间
+        if not blogs and user.idstr not in self.get_complete():
             self.record_spider_time(uid=user.idstr)
             return
         new_blogs = list()
@@ -294,7 +293,7 @@ class CompleteDownload(Cache):
             if len(blogs) == 1 and blogs[0] == user.idstr:
                 # 当前博主已经完成全量爬取
                 self.record_complete(user.idstr)
-                return
+                return []
             # 执行装饰器操作
             return func(*args, **kwargs)
 
