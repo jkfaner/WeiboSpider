@@ -11,7 +11,7 @@
 """
 import logging
 
-from aop import LoggerAOP
+from aop.log import LoggerAOP
 from extractor.extractor import ExtractorApi
 from loader import ProjectLoader
 from request.fetch import Session

@@ -13,34 +13,18 @@ import logging
 import time
 from typing import List
 
-from aop import LoggerAOP, FilterAOP
+from aop.log import LoggerAOP
 from entity.blogType import BlogType
 from entity.user import User
-from parse import WeiboParse
+from parse import Parse
 from request.download import Download
-from request.fetch import Session
 from request.login import Login
 from request.request import RequestIter
 
 
-class InitMain(WeiboParse, Session):
+class BaseSpider(Parse):
     requestIter = RequestIter()
     download = Download()
-
-    @FilterAOP.all_download
-    def start_download(self, blogs, user):
-        """
-        开始下载：
-            数据筛选&下载
-        :param blogs:
-        :param user:
-        :return:
-        """
-        download_datas = self.download.distribute_data(blogs=blogs, user=user)
-        self.download.startDownload(download_datas)
-
-
-class BaseSpider(InitMain):
 
     def spider_iter(self, *args, **kwargs):
         yield []
@@ -116,13 +100,18 @@ class SpiderFollow(BaseSpider):
                 blogs = self.extractor_blog(response=blog, user=user)
                 if blogs:
                     yield blogs, user
+                else:
+                    break
                 time.sleep(2)
 
     @LoggerAOP(message="执行入口->爬取关注", level=logging.INFO, save=True)
     def run(self, *args, **kwargs):
         for users in self.obj.spider_iter():
             for blogs, user in self.get_blog_iter(users=users):
-                self.start_download(blogs=blogs, user=user)
+                medias = self.extractor_media(blogs=blogs, user=user)
+                if not medias:
+                    continue
+                self.download.startDownload(medias)
 
 
 class SpiderRefresh(BaseSpider):

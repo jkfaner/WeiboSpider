@@ -9,9 +9,12 @@
 @File:loader.py
 @Desc:加载器
 """
+import os
+
 from database import RedisPool
+from utils import constants
 from utils.logger import logger
-from utils.tool import load_json
+from utils.tool import load_json, parse_user
 
 
 class ProjectLoader(object):
@@ -55,3 +58,68 @@ class ProjectLoader(object):
             ).redis
             logger.info("[redis数据库连接池]:初始化成功->>> {} -> {}".format(client.get("host"), client.get("db")))
         return cls._redisClient
+
+
+class FilterFactory:
+    filter_config = ProjectLoader.getSpiderConfig().get("filter")
+
+    @classmethod
+    def filter_blog(cls):
+        return cls.filter_config.get("filter-blog")
+
+    @classmethod
+    def filter_user(cls):
+        return cls.filter_config.get("filter-user")
+
+    @classmethod
+    def filter_type(cls):
+        return cls.filter_config.get("filter-type")
+
+    @classmethod
+    def original_user(cls):
+        return cls.filter_config.get("original")
+
+    @classmethod
+    def forward_user(cls):
+        return cls.filter_config.get("forward")
+
+    @classmethod
+    def get_filterUser(cls):
+        original_users = parse_user(cls.original_user())
+        forward_users = parse_user(cls.forward_user())
+        filter_type = cls.filter_type()
+        if filter_type == constants.BLOG_FILTER_ORIGINAL:
+            users = list(set(original_users))
+        elif filter_type == constants.BLOG_FILTER_FORWARD:
+            users = list(set(forward_users))
+        else:
+            original_users.extend(forward_users)
+            users = list(set(original_users))
+        return users
+
+
+class RedisFactory:
+
+    @classmethod
+    def get_user_spider_time(cls, uid):
+        return ProjectLoader.getRedisClient().hget(name=constants.REDIS_SPIDER_USER_START, key=uid)
+
+    @classmethod
+    def get_full_spider_user(cls):
+        return [i for i in ProjectLoader.getRedisClient().sscan_iter(name=constants.REDIS_SPIDER_USER_FULL)]
+
+
+class DownloadLoader(object):
+    _spider_config = ProjectLoader.getSpiderConfig()
+    _database_config = ProjectLoader.getDatabaseConfig()
+    _redis_client = ProjectLoader.getRedisClient()
+
+    def __init__(self):
+        self.root_path = self._spider_config["download"]["root"]
+        self.redis_client = self._redis_client
+        self.thread = self._spider_config["download"]["thread"]
+        self.workers = self._spider_config["download"]["workers"]
+        # 创建weibo专属路径
+        self.rootPath = os.path.join(self.root_path, "weibo")
+        if not os.path.exists(self.rootPath):
+            os.makedirs(self.rootPath)

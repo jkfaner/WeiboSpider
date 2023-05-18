@@ -14,12 +14,11 @@ import logging
 
 import requests
 from DecryptLogin.core import weibo
-
 from requests import Session
 from requests.cookies import RequestsCookieJar
 
+from aop.log import LoggerAOP
 from loader import ProjectLoader
-from aop import LoggerAOP
 from utils.constants import REDIS_LOGIN_NAME
 
 

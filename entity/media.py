@@ -6,12 +6,12 @@
 @Ide:PyCharm
 @Time:2022/2/19 17:04
 @Project:WeiboSpiderStation
-@File:downloadEntity.py
+@File:media.py
 @Desc:
 """
 
 
-class DownloadEntity(object):
+class Media(object):
 
     def __init__(self):
         self.__blog = None

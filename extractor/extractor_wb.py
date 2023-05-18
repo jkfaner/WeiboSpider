@@ -11,13 +11,15 @@
 """
 from typing import List
 
-from entity.playInfoEntity import PlayInfoEntity
-from entity.user import User
+import utils.constants as constants
 from entity.blog import Blog
 from entity.blogType import BlogType
-import utils.constants as constants
+from entity.media import Media
+from entity.playInfoEntity import PlayInfoEntity
+from entity.user import User
 from extractor.extractor import ExtractorApi
 from utils.logger import logger
+from utils.tool import get_file_suffix, time_formatting
 
 
 class ExtractorUserInfo(ExtractorApi):
@@ -223,3 +225,46 @@ class ExtractorWeibo(ExtractorUserInfo):
             weiboTypeEntity.forward = forward_weiboEntity
 
         return weiboTypeEntity
+
+    @staticmethod
+    def extractor_media(blogs: List[Blog]) -> List[Media]:
+        new_blogs = list()
+        for blog in blogs:
+            base_filename = "{}_{}".format(time_formatting(blog.created_at), blog.blog_id)
+            # 视频
+            if blog.videos:
+                filename = "{}.mp4".format(base_filename)
+
+                video_media = Media()
+                video_media.blog = blog
+                video_media.blog_id = blog.blog_id
+                video_media.filename = filename
+                video_media.folder_name = blog.video_str
+                video_media.url = blog.videos.url
+                new_blogs.append(video_media)
+            # 图片
+            for image in blog.images:
+                suffix = get_file_suffix(image["url"])
+                filename = "{}_{}.{}".format(base_filename, image['index'], suffix)
+
+                image_media = Media()
+                image_media.blog = blog
+                image_media.blog_id = blog.blog_id
+                image_media.filename = filename
+                image_media.folder_name = blog.image_str
+                image_media.url = image['url']
+                new_blogs.append(image_media)
+
+            # livephoto
+            for livephoto in blog.livephoto_video:
+                suffix = get_file_suffix(livephoto["url"])
+                filename = "{}_{}.{}".format(base_filename, livephoto['index'], suffix)
+
+                live_midia = Media()
+                live_midia.blog = blog
+                live_midia.blog_id = blog.blog_id
+                live_midia.filename = filename
+                live_midia.folder_name = blog.video_str
+                live_midia.url = livephoto['url']
+                new_blogs.append(live_midia)
+        return new_blogs

@@ -14,9 +14,10 @@ import hashlib
 import json
 import os.path
 import sys
-import time
 from concurrent import futures
+from typing import List
 from urllib.parse import urlencode
+
 from tqdm import tqdm
 
 
@@ -47,32 +48,13 @@ def join_url(url: str, params: dict):
     :param params:参数
     :return:
     """
-    url = url + "?" + urlencode(removeNoneDict(params))
+    # 删除空值的键值对
+    for key in list(params.keys()):
+        if params.get(key) is None:
+            del params[key]
+
+    url = url + "?" + urlencode(params)
     return url
-
-
-def removeNoneDict(item: dict):
-    """
-    删除空值的键值对
-    :param item:
-    :return:
-    """
-    for key in list(item.keys()):
-        if item.get(key) is None:
-            del item[key]
-    return item
-
-
-def is_valid_date(strdate):
-    '''判断是否是一个有效的日期字符串'''
-    try:
-        if ":" in strdate:
-            time.strptime(strdate, "%Y-%m-%d %H:%M:%S")
-        else:
-            time.strptime(strdate, "%Y-%m-%d")
-        return True
-    except:
-        return False
 
 
 def time_formatting(created_at, usefilename: bool = True, strftime: bool = None):
@@ -91,21 +73,6 @@ def time_formatting(created_at, usefilename: bool = True, strftime: bool = None)
     else:
         strftime = '%Y-%m-%d'
     return dt_obj.astimezone(tz=None).strftime(strftime)
-
-
-def match_date(create_time: str, filter_date: str) -> bool:
-    """
-    符合时间
-    :param create_time:
-    :param filter_date:约定的时间
-    :return:
-    """
-
-    created_at = datetime.datetime.strptime(time_formatting(create_time, usefilename=False), '%Y-%m-%d').date()
-    setting_created_at = datetime.datetime.strptime(filter_date, '%Y-%m-%d').date()
-    if created_at > setting_created_at:
-        return True
-    return False
 
 
 def compare_date(stime, etime):
@@ -141,15 +108,6 @@ def getRedisKey(uid, url, filepath):
     if "?" in url:
         url = url.split("?")[0]
     str_data = f"{uid}&{url}&{filepath}"
-    return get_str_md5(str_data=str_data)
-
-
-def get_str_md5(str_data):
-    """
-    获取字符串md5值
-    :param str_data:
-    :return:
-    """
     md5 = hashlib.md5()
     md5.update(str_data.encode('utf-8'))
     return md5.hexdigest()
@@ -207,3 +165,26 @@ def EntityToJson(entity):
     """
     return json.dumps(entity, default=lambda o: {k.split("__")[-1]: v for k, v in o.__dict__.items()}, sort_keys=True,
                       ensure_ascii=False, indent=2)
+
+
+def parse_user(users: List) -> List:
+    return [user.split("/")[-1] for user in users]
+
+
+def get_file_suffix(url):
+    """
+    通过url确定文件后缀
+    # url = "https://xxx.xxx.cn/xx/xx.jpg?KID=xxx&referer=xxx.com"
+    # url = "https://xxx.xxx.cn/xx/xx.jpg"
+    # url = "https://xxx.xxx.com/xx/xx?livephoto=xxx.mov"
+    :param url: url
+    :return:
+    """
+    http_path = os.path.split(url)
+    filename = http_path[1].split("?")[0]
+    if "." in filename:
+        suffix = filename.split(".")[-1]
+    else:
+        livephoto_path = http_path[1].split("?")[1]
+        suffix = livephoto_path.split(".")[-1]
+    return suffix
