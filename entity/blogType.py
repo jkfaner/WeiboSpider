@@ -9,48 +9,59 @@
 @File:blogType.py
 @Desc:
 """
+import json
+
+from entity.base import BaseEntity
 
 
-class BlogType(object):
-    """
-    原创 or 转发
-    original or forward
-    """
+class BlogType(BaseEntity):
 
     def __init__(self):
-        self.__forward = None
-        self.__original = None
-        self.__original_uid = None
-        self.__forward_uid = None
+        self._forward = None
+        self._original = None
+        self._original_uid = None
+        self._forward_uid = None
 
     @property
     def original(self):
-        return self.__original
+        return self._original
 
     @original.setter
     def original(self, original):
-        self.__original = original
+        self._original = original
 
     @property
     def original_uid(self):
-        return self.__original_uid
+        return self._original_uid
 
     @original_uid.setter
     def original_uid(self, original_uid):
-        self.__original_uid = original_uid
+        self._original_uid = original_uid
 
     @property
     def forward_uid(self):
-        return self.__forward_uid
+        return self._forward_uid
 
     @forward_uid.setter
     def forward_uid(self, forward_uid):
-        self.__forward_uid = forward_uid
+        self._forward_uid = forward_uid
 
     @property
     def forward(self):
-        return self.__forward
+        return self._forward
 
     @forward.setter
     def forward(self, forward):
-        self.__forward = forward
+        self._forward = forward
+
+    def to_dict(self):
+        obj_dict = self.__dict__
+        cleaned_dict = {}
+        for key, value in obj_dict.items():
+            if key.startswith('_'):
+                key = key[1:]
+            cleaned_dict[key] = value
+        return cleaned_dict
+
+    def to_json(self):
+        return json.dumps(self.to_dict(), ensure_ascii=False)

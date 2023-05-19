@@ -10,7 +10,9 @@
 @Desc:
 """
 import logging
+import sched
 import time
+from abc import ABC, abstractmethod
 from typing import List
 
 from aop.log import LoggerAOP
@@ -22,21 +24,21 @@ from request.login import Login
 from request.request import RequestIter
 
 
-class BaseSpider(Parse):
+class BaseStrategy(Parse, ABC):
     requestIter = RequestIter()
     download = Download()
 
-    def spider_iter(self, *args, **kwargs):
-        yield []
-
-    def run(self, *args, **kwargs):
-        pass
+    @abstractmethod
+    def execute(self):
+        raise NotImplementedError("子类必须实现execute()方法")
 
 
-class SpiderDefaultFollow(BaseSpider):
+class SpiderDefaultFollow(BaseStrategy):
     """爬取关注->默认爬虫规则"""
 
-    def get_user(self, *args, **kwargs):
+    @LoggerAOP(message="爬取关注->默认爬虫规则", level=logging.INFO, save=True)
+    def execute(self):
+        print("执行策略A的操作")
         login = Login()
         cookies_item = login.select_cookies()
         if cookies_item:
@@ -49,41 +51,31 @@ class SpiderDefaultFollow(BaseSpider):
         for item in self.requestIter.getUserFollowIter(uid=uid):
             yield self.extractor_user(item)
 
-    @LoggerAOP(message="爬取关注->默认爬虫规则", level=logging.INFO, save=True)
-    def spider_iter(self, *args, **kwargs):
-        return self.get_user(*args, **kwargs)
 
-
-class SpiderNewFollow(BaseSpider):
+class SpiderNewFollow(BaseStrategy):
     """爬取关注->最新关注顺序"""
 
-    def get_user(self, *args, **kwargs):
+    @LoggerAOP(message="爬取关注->最新关注顺序", level=logging.INFO, save=True)
+    def execute(self):
+        print("执行策略B的操作")
         for item in self.requestIter.getUserFollowByNewFollowIter():
             yield self.extractor_user(item)
 
-    @LoggerAOP(message="爬取关注->最新关注顺序", level=logging.INFO, save=True)
-    def spider_iter(self, *args, **kwargs):
-        return self.get_user(*args, **kwargs)
 
-
-class SpiderNewPublishFollow(BaseSpider):
+class SpiderNewPublishFollow(BaseStrategy):
     """爬取关注->最新有发布的用户顺序"""
 
-    def get_user(self, *args, **kwargs):
+    def execute(self):
+        print("执行策略C的操作")
         for item in self.requestIter.getUserFollowByNewPublicIter():
             yield self.extractor_user(item)
 
-    @LoggerAOP(message="爬取关注->最新有发布的用户顺序", level=logging.INFO, save=True)
-    def spider_iter(self, *args, **kwargs):
-        return self.get_user(*args, **kwargs)
 
+class SpiderFollow(BaseStrategy):
 
-class SpiderFollow(BaseSpider):
-    """爬取关注"""
-
-    def __init__(self, obj: BaseSpider):
+    def __init__(self, inner_strategy):
         super(SpiderFollow, self).__init__()
-        self.obj = obj
+        self.inner_strategy = inner_strategy
 
     @LoggerAOP(message="获取博客信息", level=logging.INFO, save=True)
     def get_blog_iter(self, users: List[User]) -> List[BlogType]:
@@ -94,38 +86,35 @@ class SpiderFollow(BaseSpider):
         """
         for user in users:
             for blog in self.requestIter.getUserBlogIter(uid=user.idstr):
-                if blog == [user.idstr]:
+                if isinstance(blog, list):
                     yield blog, user
 
                 blogs = self.extractor_blog(response=blog, user=user)
+                if isinstance(blogs, bool):
+                    # 全量采集
+                    break
                 if blogs:
                     yield blogs, user
-                else:
-                    break
-                time.sleep(2)
+                time.sleep(1)
 
     @LoggerAOP(message="执行入口->爬取关注", level=logging.INFO, save=True)
-    def run(self, *args, **kwargs):
-        for users in self.obj.spider_iter():
+    def execute(self):
+        for users in self.inner_strategy.execute():
             for blogs, user in self.get_blog_iter(users=users):
                 medias = self.extractor_media(blogs=blogs, user=user)
                 if not medias:
+                    # 非全量
                     continue
                 self.download.startDownload(medias)
 
 
-class SpiderRefresh(BaseSpider):
-    """刷微博"""
+class SpiderRefresh(BaseStrategy):
+
+    def __init__(self, inner_strategy):
+        super(SpiderRefresh, self).__init__()
+        self.inner_strategy = inner_strategy
 
     @LoggerAOP(message="执行入口->刷微博", level=logging.INFO, save=True)
-    def run(self, *args, **kwargs):
-        pass
-
-
-class Spider(object):
-
-    def __init__(self, obj: BaseSpider):
-        self.obj = obj
-
-    def run(self, *args, **kwargs):
-        self.obj.run(*args, **kwargs)
+    def execute(self):
+        print("执行嵌套策略B的操作")
+        self.inner_strategy.execute()

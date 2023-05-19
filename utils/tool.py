@@ -15,10 +15,30 @@ import json
 import os.path
 import sys
 from concurrent import futures
-from typing import List
+from typing import List, TypeVar
 from urllib.parse import urlencode
 
 from tqdm import tqdm
+
+from entity.base import BaseEntity
+
+
+def to_obj(dictionary, class_name):
+    cls = globals()[class_name]  # 根据类名获取对应的类对象
+    obj = cls(**dictionary)  # 使用类对象和字典创建类实例
+    return obj
+
+
+def set_attr(source: dict, entity: BaseEntity):
+    """
+    entity对象赋值
+    :param entity:
+    :param source:
+    :return:
+    """
+    for k, v in entity.to_dict().items():
+        setattr(entity, k, source.get(k))
+    return entity
 
 
 def load_json(path: str) -> dict:
@@ -156,15 +176,6 @@ def process_pool(method, data, **kwargs):
         res.set_description(prompt)
         return len(list(res))
 
-
-def EntityToJson(entity):
-    """
-    Entity实体类转json
-    :param entity:
-    :return:
-    """
-    return json.dumps(entity, default=lambda o: {k.split("__")[-1]: v for k, v in o.__dict__.items()}, sort_keys=True,
-                      ensure_ascii=False, indent=2)
 
 
 def parse_user(users: List) -> List:

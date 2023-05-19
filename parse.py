@@ -11,7 +11,11 @@
 """
 from typing import List
 
-from aop.filter import FilterUser, FilterBlogType, FilterBlogDate, FilterDownloaded, CompleteDownload
+from aop.complete import CompleteDownload
+from aop.date import FilterBlogDate
+from aop.downloaded import FilterDownloaded
+from aop.type import FilterBlogType
+from aop.user import FilterUser
 from entity.blog import Blog
 from entity.blogType import BlogType
 from entity.media import Media
@@ -25,7 +29,7 @@ class WeiboParse(object):
     """解析"""
     extractorWeibo = ExtractorWeibo()
 
-    @FilterUser(FilterFactory.get_filterUser())
+    @FilterUser(FilterFactory.get_filterUser())  # 过滤博主
     def extractor_user(self, response, *args, **kwargs) -> List[User]:
         """
         提取用户
@@ -34,8 +38,8 @@ class WeiboParse(object):
         """
         return self.extractorWeibo.extractor_userInfo(resp=response)
 
-    @FilterBlogDate()
-    @FilterBlogType(FilterFactory.filter_type())
+    @FilterBlogDate()  # 过滤日期
+    @FilterBlogType(FilterFactory.filter_type())  # 过滤类型：原创、转发
     def extractor_blog(self, response, *args, **kwargs) -> List[BlogType]:
         """
         提取博客
