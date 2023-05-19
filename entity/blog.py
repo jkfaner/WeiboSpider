@@ -13,6 +13,7 @@ import json
 
 from entity.base import BaseEntity
 
+
 class Blog(BaseEntity):
 
     def __init__(self):

@@ -15,9 +15,8 @@ from typing import List, Union
 from cache import Cache
 from entity.blog import Blog
 from entity.blogType import BlogType
-from entity.progress import Progress
 from utils.logger import logger
-from utils.tool import compare_date, get_time_now
+from utils.tool import get_time_now
 
 
 class FilterBlogDate(Cache):

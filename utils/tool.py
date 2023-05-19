@@ -15,7 +15,7 @@ import json
 import os.path
 import sys
 from concurrent import futures
-from typing import List, TypeVar
+from typing import List
 from urllib.parse import urlencode
 
 from tqdm import tqdm

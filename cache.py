@@ -10,12 +10,10 @@
 @Desc:
 """
 import json
-import pickle
 
 from entity.progress import Progress
 from loader import DownloadLoader
 from utils import constants
-from utils.tool import get_time_now, to_obj, set_attr
 
 
 class RedisCache(DownloadLoader):
@@ -72,22 +70,6 @@ class RedisCache(DownloadLoader):
         """
         self.redis_client.hset(name=constants.REDIS_DOWNLOAD_FINISH_NAME, key=key, value=value)
 
-    def record_spider_time(self, uid: str):
-        """
-        记录时间
-        :param uid: uid
-        :return:
-        """
-        self.redis_client.hset(name=constants.REDIS_SPIDER_USER_START, key=uid, value=get_time_now())
-
-    def get_spider_time(self, uid):
-        """
-        获取记录时间
-        :param uid: uid
-        :return:
-        """
-        return self.redis_client.hget(name=constants.REDIS_SPIDER_USER_START, key=uid)
-
     def record_error(self, key: str, value: str):
         """
         记录错误
@@ -128,13 +110,6 @@ class RedisCache(DownloadLoader):
         :return:
         """
         return self.redis_client.sismember(constants.REDIS_SPIDER_USER_FULL, uid)
-
-    def get_complete(self):
-        """
-        获取全量下载用户
-        :return:
-        """
-        return [i for i in self.redis_client.sscan_iter(name=constants.REDIS_SPIDER_USER_FULL)]
 
     def record_blog_progress(self, progress: Progress):
         """

@@ -9,15 +9,14 @@
 @File:extractor_wb.py
 @Desc:微博json数据解析
 """
-from typing import List, TypeVar
+from typing import List
 
 import utils.constants as constants
-from entity.base import BaseEntity
 from entity.blog import Blog
 from entity.blogType import BlogType
 from entity.media import Media
-from entity.video import Video
 from entity.user import User
+from entity.video import Video
 from extractor.extractor import ExtractorApi
 from utils.logger import logger
 from utils.tool import get_file_suffix, time_formatting, set_attr

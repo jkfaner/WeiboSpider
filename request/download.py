@@ -9,18 +9,14 @@
 @File:download.py
 @Desc:
 """
-import logging
 import os
-import pickle
 from typing import List
 
 import requests
 from tqdm import tqdm
 
-from aop.log import LoggerAOP
 from cache import Cache
 from entity.media import Media
-from entity.progress import Progress
 from utils.exception import NOTContentLengthError, FinishedError, NotFound
 from utils.logger import logger
 from utils.tool import getRedisKey, get_time_now
@@ -126,7 +122,7 @@ class Download(Cache):
         # 下载完成就写入数据库
         self.record_blog_progress(p)
         self.record_finished(key=redis_key, value=media_json)
-        self.record_spider_time(uid=media.blog.id)
+        # self.record_spider_time(uid=media.blog.id)
 
     def startDownload(self, medias: List[Media]):
         """
