@@ -9,12 +9,14 @@
 @File:download.py
 @Desc:
 """
+import logging
 import os
 from typing import List
 
 import requests
 from tqdm import tqdm
 
+from aop.log import LoggerAOP
 from cache import Cache
 from entity.media import Media
 from utils.exception import NOTContentLengthError, FinishedError, NotFound
@@ -36,33 +38,32 @@ class Download(Cache):
         r = requests.get(url, stream=True)
         if r.status_code != 200:
             raise NotFound("404 Not Found")
-        # 获取文件大小
+
         try:
             file_size = int(r.headers['content-length'])
         except Exception:
             raise NOTContentLengthError("url资源没有文件大小数据")
-        # 如果文件存在获取文件大小，否在从 0 开始下载，
+
         first_byte = 0
         if os.path.exists(filepath):
             first_byte = os.path.getsize(filepath)
-        # 判断是否已经下载完成
+
         if first_byte >= file_size:
             raise FinishedError("文件已经下载完毕")
+
         return first_byte, file_size
 
     @staticmethod
-    # @LoggerAOP(message="媒体下载链接：{}", index=["args[0].url"], level=logging.INFO, save=True)
+    @LoggerAOP(message="媒体下载链接：{}", index=["args[0].url"], level=logging.INFO, save=True)
     def _segmented_download(item: Media, first_byte, file_size, bar=True):
         """
         分段下载
-        :param item: dict{url=url, filepath=filepath}
+        :param item:
         :param first_byte:
         :param file_size:
         :param bar:是否显示进度条
         :return:
         """
-        # Range 加入请求头
-        # 加 headers 参数
         header = {"Range": f"bytes={first_byte}-{file_size}"}
         pbar = None
         if bar:

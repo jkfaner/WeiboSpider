@@ -98,8 +98,11 @@ class SpiderFollow(BaseStrategy):
 
     @LoggerAOP(message="执行入口->爬取关注", level=logging.INFO, save=True)
     def execute(self):
+        # 获取博主
         for users in self.inner_strategy.execute():
+            # 获取博主的博客
             for blogs, user in self.get_blog_iter(users=users):
+
                 medias = self.extractor_media(blogs=blogs, user=user)
                 if not medias:
                     # 非全量
