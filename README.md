@@ -5,6 +5,8 @@
 # WeiboSpider
 
 > 微博爬虫系统，高效率博主图片视频爬取。数据接口均来自weibo.com
+- 单机版：https://github.com/jkfaner/WeiboSpider
+- 分布式版：https://github.com/jkfaner/WeiboSpiderX
 
 [![GitHub stars](https://img.shields.io/github/stars/jkfaner/apple-monitor.svg)](https://github.com/jkfaner/apple-monitor)
 
