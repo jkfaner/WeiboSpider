@@ -23,12 +23,6 @@ from tqdm import tqdm
 from entity.base import BaseEntity
 
 
-def to_obj(dictionary, class_name):
-    cls = globals()[class_name]  # 根据类名获取对应的类对象
-    obj = cls(**dictionary)  # 使用类对象和字典创建类实例
-    return obj
-
-
 def set_attr(source: dict, entity: BaseEntity):
     """
     entity对象赋值
@@ -175,7 +169,6 @@ def process_pool(method, data, **kwargs):
         res = tqdm(executor.map(method, data), total=len(data))
         res.set_description(prompt)
         return len(list(res))
-
 
 
 def parse_user(users: List) -> List:
